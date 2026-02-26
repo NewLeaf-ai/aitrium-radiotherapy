@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/rt_dvh_metrics.input.schema.json",
+  "title": "rt_dvh_metrics input",
+  "type": "object",
+  "required": ["rtstruct_path", "rtdose_path", "metrics"],
+  "properties": {
+    "rtstruct_path": {
+      "type": "string",
+      "description": "Path to RTSTRUCT DICOM file"
+    },
+    "rtdose_path": {
+      "type": "string",
+      "description": "Path to RTDOSE DICOM file"
+    },
+    "structures": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional case-insensitive structure filter"
+    },
+    "interpolation": {
+      "type": "boolean",
+      "default": false
+    },
+    "z_segments": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0
+    },
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Metric queries to evaluate for each selected structure",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "volume_percent"],
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "const": "dose_at_volume" },
+              "volume_percent": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["type", "dose_gy"],
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "const": "volume_at_dose" },
+              "dose_gy": {
+                "type": "number",
+                "minimum": 0
+              },
+              "volume_unit": {
+                "type": "string",
+                "enum": ["percent", "cc"],
+                "default": "percent"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["type", "stat"],
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "const": "stat" },
+              "stat": {
+                "type": "string",
+                "enum": [
+                  "n_bins",
+                  "total_cc",
+                  "min_gy",
+                  "max_gy",
+                  "mean_gy",
+                  "d100_gy",
+                  "d98_gy",
+                  "d95_gy",
+                  "d90_gy",
+                  "d80_gy",
+                  "d70_gy",
+                  "d60_gy",
+                  "d50_gy",
+                  "d40_gy",
+                  "d30_gy",
+                  "d20_gy",
+                  "d10_gy",
+                  "d5_gy",
+                  "d2_gy",
+                  "d1_gy",
+                  "d0_gy",
+                  "homogeneity_index"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

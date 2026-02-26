@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/rt_inspect.output.schema.json",
+  "title": "rt_inspect output",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "total_files",
+    "total_dicom_files",
+    "studies"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "total_files": { "type": "integer", "minimum": 0 },
+    "total_dicom_files": { "type": "integer", "minimum": 0 },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "studies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "study_instance_uid",
+          "modalities",
+          "structures",
+          "plans",
+          "dose_grids",
+          "rtstruct_path",
+          "rtdose_path"
+        ],
+        "properties": {
+          "study_instance_uid": { "type": "string" },
+          "modalities": {
+            "type": "object",
+            "required": ["CT", "RTSTRUCT", "RTPLAN", "RTDOSE"],
+            "properties": {
+              "CT": { "type": "integer", "minimum": 0 },
+              "RTSTRUCT": { "type": "integer", "minimum": 0 },
+              "RTPLAN": { "type": "integer", "minimum": 0 },
+              "RTDOSE": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": false
+          },
+          "structures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["roi_number", "name", "category"],
+              "properties": {
+                "roi_number": { "type": "integer" },
+                "name": { "type": "string" },
+                "category": {
+                  "type": "string",
+                  "enum": ["Target", "Organ", "External", "Device", "Other"]
+                },
+                "observation_type": { "type": ["string", "null"] },
+                "volume_cc": { "type": ["number", "null"] }
+              },
+              "additionalProperties": false
+            }
+          },
+          "plans": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["sop_instance_uid", "dose_references"],
+              "properties": {
+                "plan_name": { "type": ["string", "null"] },
+                "sop_instance_uid": { "type": "string" },
+                "dose_references": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "reference_type": { "type": ["string", "null"] },
+                      "structure_type": { "type": ["string", "null"] },
+                      "prescription_dose_gy": { "type": ["number", "null"] },
+                      "referenced_roi_number": { "type": ["integer", "null"] }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "dose_grids": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["sop_instance_uid", "dimensions", "pixel_spacing_mm", "dose_scaling_gy"],
+              "properties": {
+                "sop_instance_uid": { "type": "string" },
+                "dimensions": {
+                  "type": "object",
+                  "required": ["rows", "cols", "frames"],
+                  "properties": {
+                    "rows": { "type": "integer", "minimum": 0 },
+                    "cols": { "type": "integer", "minimum": 0 },
+                    "frames": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "pixel_spacing_mm": {
+                  "type": "object",
+                  "required": ["row", "col"],
+                  "properties": {
+                    "row": { "type": "number" },
+                    "col": { "type": "number" }
+                  },
+                  "additionalProperties": false
+                },
+                "dose_scaling_gy": { "type": "number" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "rtstruct_path": { "type": "string" },
+          "rtdose_path": { "type": "string" },
+          "rtplan_path": { "type": ["string", "null"] }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

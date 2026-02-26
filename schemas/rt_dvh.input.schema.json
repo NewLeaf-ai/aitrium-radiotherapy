@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/rt_dvh.input.schema.json",
+  "title": "rt_dvh input",
+  "type": "object",
+  "required": ["rtstruct_path", "rtdose_path"],
+  "properties": {
+    "rtstruct_path": {
+      "type": "string",
+      "description": "Path to RTSTRUCT DICOM file"
+    },
+    "rtdose_path": {
+      "type": "string",
+      "description": "Path to RTDOSE DICOM file"
+    },
+    "structures": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional case-insensitive structure filter"
+    },
+    "interpolation": {
+      "type": "boolean",
+      "default": false
+    },
+    "z_segments": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0
+    },
+    "include_curves": {
+      "type": "boolean",
+      "default": false,
+      "description": "Include full DVH curve arrays (doses_gy, volumes_cc, volumes_pct). Default false for compact agent responses."
+    },
+    "max_points": {
+      "type": "integer",
+      "minimum": 2,
+      "description": "When include_curves is true, downsample each curve to at most this many points. Useful for reducing token usage — 100-200 points is typically sufficient for visualization. Default: no limit (full 0.01 Gy resolution)."
+    },
+    "precision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 15,
+      "description": "Round curve array values to this many decimal places. Reduces JSON size (e.g. precision=2 yields '12.35' instead of '12.345600000000001'). Default: full f64 precision."
+    }
+  },
+  "additionalProperties": false
+}

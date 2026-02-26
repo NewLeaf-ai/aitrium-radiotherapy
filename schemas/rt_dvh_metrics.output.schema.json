@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/rt_dvh_metrics.output.schema.json",
+  "title": "rt_dvh_metrics output",
+  "type": "object",
+  "required": ["schema_version", "structures"],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "structures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["roi_name", "metrics"],
+        "properties": {
+          "roi_name": { "type": "string" },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["id", "type", "volume_percent", "value", "unit"],
+                  "properties": {
+                    "id": { "type": "string" },
+                    "type": { "const": "dose_at_volume" },
+                    "volume_percent": { "type": "number" },
+                    "value": { "type": "number" },
+                    "unit": { "const": "gy" }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": ["id", "type", "dose_gy", "value", "unit"],
+                  "properties": {
+                    "id": { "type": "string" },
+                    "type": { "const": "volume_at_dose" },
+                    "dose_gy": { "type": "number" },
+                    "volume_unit": {
+                      "type": "string",
+                      "enum": ["percent", "cc"]
+                    },
+                    "value": { "type": "number" },
+                    "unit": {
+                      "type": "string",
+                      "enum": ["percent", "cc"]
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": ["id", "type", "stat", "value", "unit"],
+                  "properties": {
+                    "id": { "type": "string" },
+                    "type": { "const": "stat" },
+                    "stat": {
+                      "type": "string",
+                      "enum": [
+                        "n_bins",
+                        "total_cc",
+                        "min_gy",
+                        "max_gy",
+                        "mean_gy",
+                        "d100_gy",
+                        "d98_gy",
+                        "d95_gy",
+                        "d90_gy",
+                        "d80_gy",
+                        "d70_gy",
+                        "d60_gy",
+                        "d50_gy",
+                        "d40_gy",
+                        "d30_gy",
+                        "d20_gy",
+                        "d10_gy",
+                        "d5_gy",
+                        "d2_gy",
+                        "d1_gy",
+                        "d0_gy",
+                        "homogeneity_index"
+                      ]
+                    },
+                    "value": { "type": "number" },
+                    "unit": {
+                      "type": "string",
+                      "enum": ["gy", "cc", "percent", "ratio", "count"]
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

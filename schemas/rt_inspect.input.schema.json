@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/rt_inspect.input.schema.json",
+  "title": "rt_inspect input",
+  "type": "object",
+  "required": ["path"],
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "Path to a directory containing DICOM files (recursive scan)."
+    }
+  },
+  "additionalProperties": false
+}

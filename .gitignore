@@ -1,0 +1,10 @@
+/target/
+**/target/
+**/__pycache__/
+**/.pytest_cache/
+**/*.pyc
+**/node_modules/
+**/dist/
+.venv/
+**/.venv/
+.DS_Store

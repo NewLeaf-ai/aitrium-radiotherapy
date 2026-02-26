@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/rt_dvh.output.schema.json",
+  "title": "rt_dvh output",
+  "type": "object",
+  "required": ["schema_version", "dvhs"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "dvhs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["roi_name", "stats"],
+        "properties": {
+          "roi_name": { "type": "string" },
+          "stats": {
+            "type": "object",
+            "required": [
+              "n_bins",
+              "total_cc",
+              "min_gy",
+              "max_gy",
+              "mean_gy",
+              "D100_gy",
+              "D98_gy",
+              "D95_gy",
+              "D90_gy",
+              "D80_gy",
+              "D70_gy",
+              "D60_gy",
+              "D50_gy",
+              "D40_gy",
+              "D30_gy",
+              "D20_gy",
+              "D10_gy",
+              "D5_gy",
+              "D2_gy",
+              "D1_gy",
+              "D0_gy",
+              "homogeneity_index"
+            ],
+            "properties": {
+              "n_bins": { "type": "integer" },
+              "total_cc": { "type": "number" },
+              "min_gy": { "type": "number" },
+              "max_gy": { "type": "number" },
+              "mean_gy": { "type": "number" },
+              "D100_gy": { "type": "number" },
+              "D98_gy": { "type": "number" },
+              "D95_gy": { "type": "number" },
+              "D90_gy": { "type": "number" },
+              "D80_gy": { "type": "number" },
+              "D70_gy": { "type": "number" },
+              "D60_gy": { "type": "number" },
+              "D50_gy": { "type": "number" },
+              "D40_gy": { "type": "number" },
+              "D30_gy": { "type": "number" },
+              "D20_gy": { "type": "number" },
+              "D10_gy": { "type": "number" },
+              "D5_gy": { "type": "number" },
+              "D2_gy": { "type": "number" },
+              "D1_gy": { "type": "number" },
+              "D0_gy": { "type": "number" },
+              "homogeneity_index": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "doses_gy": {
+            "type": "array",
+            "items": { "type": "number" }
+          },
+          "volumes_cc": {
+            "type": "array",
+            "items": { "type": "number" }
+          },
+          "volumes_pct": {
+            "type": "array",
+            "items": { "type": "number" }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

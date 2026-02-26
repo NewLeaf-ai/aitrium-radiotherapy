@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/error.schema.json",
+  "title": "RT Analysis Error",
+  "type": "object",
+  "required": ["code", "message"],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "INVALID_INPUT",
+        "FILE_NOT_FOUND",
+        "DICOM_PARSE_ERROR",
+        "MATCHING_ERROR",
+        "COMPUTE_ERROR",
+        "INTERNAL"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "details": {
+      "type": ["object", "array", "string", "number", "boolean", "null"]
+    }
+  },
+  "additionalProperties": false
+}

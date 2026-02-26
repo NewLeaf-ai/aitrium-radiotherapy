@@ -1,0 +1,28 @@
+[workspace]
+members = [".", "crates/aitrium_dvh"]
+resolver = "2"
+
+[package]
+name = "aitrium-radiotherapy-server"
+version = "0.1.0"
+edition = "2021"
+description = "MCP-compatible radiotherapy analysis server"
+license = "MIT"
+
+[dependencies]
+aitrium_dvh = { path = "crates/aitrium_dvh", default-features = false, features = ["memmap"] }
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+log = "0.4"
+env_logger = "0.11"
+dicom = { version = "0.7", features = ["ndarray"] }
+dicom-core = "0.7"
+dicom-object = "0.7"
+dicom-dictionary-std = "0.7"
+walkdir = "2.5"
+
+[dev-dependencies]
+tempfile = "3.10"
+pretty_assertions = "1.4"
