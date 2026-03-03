@@ -13,6 +13,9 @@ SELF_TEST_ONLY=0
 VERIFY_MCP_ONLY=0
 BIN_DIR="${HOME}/.local/bin"
 INSTALL_REPO="${DEFAULT_REPO}"
+RELEASE_BASE_URL="${AITRIUM_RADIOTHERAPY_RELEASE_BASE_URL:-}"
+MANIFEST_URL="${AITRIUM_RADIOTHERAPY_MANIFEST_URL:-}"
+GITHUB_AUTH_TOKEN="${AITRIUM_GITHUB_TOKEN:-${GITHUB_TOKEN:-${GH_TOKEN:-}}}"
 
 CLAUDE_SKILL_STATUS="skipped"
 CODEX_SKILL_STATUS="skipped"
@@ -24,7 +27,7 @@ RUNTIME_SELF_TEST_STATUS="skipped"
 
 usage() {
   cat <<'EOF'
-Install aitrium-radiotherapy from prebuilt GitHub release assets.
+Install aitrium-radiotherapy from prebuilt release assets.
 
 Usage:
   install.sh [options]
@@ -38,6 +41,8 @@ Options:
   --no-mcp                       Skip MCP auto-registration
   --bin-dir <path>               Install binary to this directory (default: ~/.local/bin)
   --repo <owner/repo>            GitHub repository source
+  --release-base-url <url>       Base URL containing manifest/assets (e.g. public GCS path)
+  --manifest-url <url>           Full URL to manifest.json (overrides tag/base-url resolution)
   --skip-self-test               Skip runtime self-test (dev-only)
   --self-test-only               Run self-test on installed binary and exit
   --verify-mcp-only              Verify configured MCP integrations and exit
@@ -46,6 +51,10 @@ Options:
 Environment:
   AITRIUM_RADIOTHERAPY_GITHUB_REPO        GitHub repo in owner/repo form
                                  (default: NewLeaf-ai/agentic-dicom-suite)
+  AITRIUM_RADIOTHERAPY_RELEASE_BASE_URL   Override release base URL
+  AITRIUM_RADIOTHERAPY_MANIFEST_URL       Override manifest URL
+  AITRIUM_GITHUB_TOKEN / GITHUB_TOKEN / GH_TOKEN
+                                 Optional token for private GitHub release assets
 EOF
 }
 
@@ -108,10 +117,18 @@ sha256_file() {
   die "No SHA256 tool found (sha256sum, shasum, or openssl required)."
 }
 
+curl_with_auth() {
+  if [[ -n "$GITHUB_AUTH_TOKEN" ]]; then
+    curl -H "Authorization: Bearer ${GITHUB_AUTH_TOKEN}" "$@"
+    return
+  fi
+  curl "$@"
+}
+
 download_to() {
   local url="$1"
   local out="$2"
-  curl -fL --retry 3 --retry-delay 1 "$url" -o "$out"
+  curl_with_auth -fL --retry 3 --retry-delay 1 "$url" -o "$out"
 }
 
 detect_target() {
@@ -150,11 +167,11 @@ resolve_latest_tag() {
 
   if [[ "$channel" == "stable" ]]; then
     local json
-    json="$(curl -fsSL "https://api.github.com/repos/${repo}/releases/latest")"
+    json="$(curl_with_auth -fsSL "https://api.github.com/repos/${repo}/releases/latest")"
     tag="$(printf '%s\n' "$json" | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
   else
     local json current_tag=""
-    json="$(curl -fsSL "https://api.github.com/repos/${repo}/releases?per_page=50")"
+    json="$(curl_with_auth -fsSL "https://api.github.com/repos/${repo}/releases?per_page=50")"
     while IFS= read -r line; do
       if [[ "$line" =~ \"tag_name\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
         current_tag="${BASH_REMATCH[1]}"
@@ -391,6 +408,16 @@ while [[ $# -gt 0 ]]; do
       [[ -n "$INSTALL_REPO" ]] || die "Missing value for --repo"
       shift 2
       ;;
+    --release-base-url)
+      RELEASE_BASE_URL="${2:-}"
+      [[ -n "$RELEASE_BASE_URL" ]] || die "Missing value for --release-base-url"
+      shift 2
+      ;;
+    --manifest-url)
+      MANIFEST_URL="${2:-}"
+      [[ -n "$MANIFEST_URL" ]] || die "Missing value for --manifest-url"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -460,24 +487,44 @@ if [[ "$VERIFY_MCP_ONLY" -eq 1 ]]; then
 fi
 
 TAG=""
-if [[ "$VERSION" == "latest" ]]; then
-  TAG="$(resolve_latest_tag "$INSTALL_REPO" "$CHANNEL")"
+if [[ -z "$MANIFEST_URL" && -z "$RELEASE_BASE_URL" ]]; then
+  if [[ "$VERSION" == "latest" ]]; then
+    TAG="$(resolve_latest_tag "$INSTALL_REPO" "$CHANNEL")"
+  else
+    if [[ "$VERSION" == aitrium-radiotherapy-v* ]]; then
+      TAG="$VERSION"
+    else
+      TAG="aitrium-radiotherapy-v${VERSION}"
+    fi
+  fi
+fi
+
+MANIFEST_PATH="$TMP_DIR/manifest.json"
+if [[ -n "$MANIFEST_URL" ]]; then
+  log "Downloading manifest: ${MANIFEST_URL}"
+  download_to "$MANIFEST_URL" "$MANIFEST_PATH"
 else
-  if [[ "$VERSION" == aitrium-radiotherapy-v* ]]; then
+  if [[ -z "$RELEASE_BASE_URL" ]]; then
+    RELEASE_BASE_URL="https://github.com/${INSTALL_REPO}/releases/download/${TAG}"
+  fi
+  RELEASE_BASE_URL="${RELEASE_BASE_URL%/}"
+  log "Downloading manifest: ${RELEASE_BASE_URL}/manifest.json"
+  download_to "${RELEASE_BASE_URL}/manifest.json" "$MANIFEST_PATH"
+fi
+
+MANIFEST_ENV="$TMP_DIR/manifest.env"
+parse_manifest "$MANIFEST_PATH" "$TARGET" "$MANIFEST_ENV"
+source "$MANIFEST_ENV"
+
+if [[ -z "$TAG" ]]; then
+  if [[ "$VERSION" == "latest" || -z "$VERSION" ]]; then
+    TAG="custom"
+  elif [[ "$VERSION" == aitrium-radiotherapy-v* ]]; then
     TAG="$VERSION"
   else
     TAG="aitrium-radiotherapy-v${VERSION}"
   fi
 fi
-
-RELEASE_BASE_URL="https://github.com/${INSTALL_REPO}/releases/download/${TAG}"
-MANIFEST_PATH="$TMP_DIR/manifest.json"
-log "Downloading manifest: ${RELEASE_BASE_URL}/manifest.json"
-download_to "${RELEASE_BASE_URL}/manifest.json" "$MANIFEST_PATH"
-
-MANIFEST_ENV="$TMP_DIR/manifest.env"
-parse_manifest "$MANIFEST_PATH" "$TARGET" "$MANIFEST_ENV"
-source "$MANIFEST_ENV"
 
 [[ -n "${TARGET_URL:-}" ]] || die "Manifest parse failed (missing TARGET_URL)."
 [[ -n "${TARGET_CHECKSUM:-}" ]] || die "Manifest parse failed (missing TARGET_CHECKSUM)."

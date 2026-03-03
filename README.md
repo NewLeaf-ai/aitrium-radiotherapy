@@ -71,6 +71,21 @@ macOS/Linux:
 curl -fsSL https://github.com/NewLeaf-ai/agentic-dicom-suite/releases/latest/download/install.sh | bash
 ```
 
+For private repositories, authenticate first:
+
+```bash
+export GITHUB_TOKEN=YOUR_TOKEN_WITH_REPO_READ
+curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  https://github.com/NewLeaf-ai/agentic-dicom-suite/releases/latest/download/install.sh | bash
+```
+
+For public GCS-hosted distribution assets:
+
+```bash
+curl -fsSL "https://storage.googleapis.com/<bucket>/aitrium-radiotherapy-vX.Y.Z/install.sh" | \
+  bash -s -- --release-base-url "https://storage.googleapis.com/<bucket>/aitrium-radiotherapy-vX.Y.Z"
+```
+
 Windows PowerShell:
 
 ```powershell
@@ -90,9 +105,17 @@ Installer flags:
 - `--no-mcp`
 - `--bin-dir <path>`
 - `--repo <owner/repo>`
+- `--release-base-url <url>`
+- `--manifest-url <url>`
 - `--skip-self-test` (dev-only)
 - `--self-test-only`
 - `--verify-mcp-only`
+
+Environment overrides:
+
+- `AITRIUM_RADIOTHERAPY_RELEASE_BASE_URL`
+- `AITRIUM_RADIOTHERAPY_MANIFEST_URL`
+- `AITRIUM_GITHUB_TOKEN` / `GITHUB_TOKEN` / `GH_TOKEN`
 
 Release assets include per-target archives, checksums, installers, skill package, and `manifest.json`.
 
