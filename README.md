@@ -6,7 +6,13 @@
 - `rt_dvh`: compute DVHs from explicit RTSTRUCT + RTDOSE paths (compact by default).
 - `rt_dvh_metrics`: compute atomic DVH metrics (D@V, V@D, stat fields) for token-efficient agent use.
 
-It vendors the Rust DVH engine from `newleaf-native/crates/aitrium_dvh` as the computation source of truth and exposes language-neutral JSON contracts for Python and TypeScript SDKs.
+It consumes the standalone [`aitrium-dvh`](https://github.com/NewLeaf-ai/aitrium-dvh) Rust crate as the computation source of truth and exposes language-neutral JSON contracts for Python and TypeScript SDKs.
+
+## Distribution Model
+
+- End users install the executable/runtime (`install.sh`, `install.ps1`, release binaries).
+- The server depends on `aitrium_dvh` via a pinned git tag (`v0.1.0`) for reproducible builds.
+- Distribution remains binary-first (`aitrium-radiotherapy-server`), while the engine crate evolves independently in its own repository.
 
 ## M1 Scope
 
@@ -44,8 +50,6 @@ aitrium-radiotherapy/
 │   └── transport/
 │       ├── mod.rs
 │       └── manual_jsonrpc.rs
-├── crates/
-│   └── aitrium_dvh/
 ├── schemas/
 ├── sdk/
 │   ├── python/
@@ -68,7 +72,7 @@ cargo build
 macOS/Linux:
 
 ```bash
-curl -fsSL https://github.com/NewLeaf-ai/agentic-dicom-suite/releases/latest/download/install.sh | bash
+curl -fsSL https://github.com/NewLeaf-ai/aitrium-radiotherapy/releases/latest/download/install.sh | bash
 ```
 
 For private repositories, authenticate first:
@@ -76,7 +80,7 @@ For private repositories, authenticate first:
 ```bash
 export GITHUB_TOKEN=YOUR_TOKEN_WITH_REPO_READ
 curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-  https://github.com/NewLeaf-ai/agentic-dicom-suite/releases/latest/download/install.sh | bash
+  https://github.com/NewLeaf-ai/aitrium-radiotherapy/releases/latest/download/install.sh | bash
 ```
 
 For public GCS-hosted distribution assets:
@@ -89,7 +93,7 @@ curl -fsSL "https://storage.googleapis.com/<bucket>/aitrium-radiotherapy-vX.Y.Z/
 Windows PowerShell:
 
 ```powershell
-irm https://github.com/NewLeaf-ai/agentic-dicom-suite/releases/latest/download/install.ps1 | iex
+irm https://github.com/NewLeaf-ai/aitrium-radiotherapy/releases/latest/download/install.ps1 | iex
 ```
 
 Known-bad release:
@@ -124,7 +128,7 @@ Release assets include per-target archives, checksums, installers, skill package
 Use this during development to quickly rebuild and refresh skills + MCP config for both Codex and Claude:
 
 ```bash
-cd /Users/spencerjohnson/projects/aitrium/aitrium-radiotherapy
+cd /path/to/aitrium-radiotherapy
 ./scripts/dev-refresh.sh
 ```
 
@@ -193,7 +197,7 @@ Call `rt_dvh_metrics`:
 
 ## Contract Schemas
 
-Canonical schemas live in `/Users/spencerjohnson/projects/aitrium/aitrium-radiotherapy/schemas`:
+Canonical schemas live in `schemas/`:
 
 - `rt_inspect.input.schema.json`
 - `rt_inspect.output.schema.json`
@@ -207,10 +211,10 @@ All success responses include `schema_version` (currently `1.0.0`).
 
 ## Python SDK
 
-Path: `/Users/spencerjohnson/projects/aitrium/aitrium-radiotherapy/sdk/python`
+Path: `sdk/python`
 
 ```bash
-cd /Users/spencerjohnson/projects/aitrium/aitrium-radiotherapy/sdk/python
+cd /path/to/aitrium-radiotherapy/sdk/python
 pip install -e .
 ```
 
@@ -226,10 +230,10 @@ with AitriumRadiotherapyClient() as client:
 
 ## TypeScript SDK
 
-Path: `/Users/spencerjohnson/projects/aitrium/aitrium-radiotherapy/sdk/typescript`
+Path: `sdk/typescript`
 
 ```bash
-cd /Users/spencerjohnson/projects/aitrium/aitrium-radiotherapy/sdk/typescript
+cd /path/to/aitrium-radiotherapy/sdk/typescript
 npm install
 npm run build
 ```

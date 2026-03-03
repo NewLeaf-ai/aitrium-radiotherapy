@@ -8,3 +8,6 @@
 .venv/
 **/.venv/
 .DS_Store
+docs/
+crates/aitrium_dvh/tests/
+crates/aitrium_dvh/dvh_output/

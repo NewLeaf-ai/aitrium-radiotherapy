@@ -1,0 +1,69 @@
+name: aitrium-radiotherapy CI
+
+on:
+  pull_request:
+    paths:
+      - "**"
+      - ".github/workflows/aitrium-radiotherapy-ci.yml"
+  push:
+    branches: ["**"]
+    paths:
+      - "**"
+      - ".github/workflows/aitrium-radiotherapy-ci.yml"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Rust fmt
+        run: cargo fmt --check
+
+      - name: Rust clippy
+        run: cargo clippy --all-targets
+
+      - name: Rust tests
+        run: cargo test
+
+      - name: Build debug binary for SDK integration tests
+        run: cargo build
+
+      - name: MCP startup smoke (debug binary)
+        run: |
+          python3 scripts/smoke_mcp_startup.py \
+            --binary "$PWD/target/debug/aitrium-radiotherapy-server" \
+            --target "ci-debug" \
+            --output "$RUNNER_TEMP/smoke-report-ci-debug.json"
+
+      - name: Schema checks
+        run: python3 scripts/check_schemas.py
+
+      - name: Python SDK tests
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e sdk/python[dev]
+          AITRIUM_RADIOTHERAPY_SERVER_BIN="$PWD/target/debug/aitrium-radiotherapy-server" pytest sdk/python/tests -q
+
+      - name: TypeScript SDK tests
+        run: |
+          cd sdk/typescript
+          npm ci
+          AITRIUM_RADIOTHERAPY_SERVER_BIN="$PWD/../../target/debug/aitrium-radiotherapy-server" npm test

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SERVER_NAME="aitrium-radiotherapy-server"
-DEFAULT_REPO="${AITRIUM_RADIOTHERAPY_GITHUB_REPO:-NewLeaf-ai/agentic-dicom-suite}"
+DEFAULT_REPO="${AITRIUM_RADIOTHERAPY_GITHUB_REPO:-NewLeaf-ai/aitrium-radiotherapy}"
 CHANNEL="stable"
 VERSION="latest"
 AGENT="both"
@@ -50,7 +50,7 @@ Options:
 
 Environment:
   AITRIUM_RADIOTHERAPY_GITHUB_REPO        GitHub repo in owner/repo form
-                                 (default: NewLeaf-ai/agentic-dicom-suite)
+                                 (default: NewLeaf-ai/aitrium-radiotherapy)
   AITRIUM_RADIOTHERAPY_RELEASE_BASE_URL   Override release base URL
   AITRIUM_RADIOTHERAPY_MANIFEST_URL       Override manifest URL
   AITRIUM_GITHUB_TOKEN / GITHUB_TOKEN / GH_TOKEN

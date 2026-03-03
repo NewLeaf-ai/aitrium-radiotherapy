@@ -1,0 +1,251 @@
+name: aitrium-radiotherapy Release
+
+on:
+  push:
+    tags:
+      - "aitrium-radiotherapy-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target_name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target_name: darwin-aarch64
+            rust_target: aarch64-apple-darwin
+            runner: macos-latest
+          - target_name: darwin-x86_64
+            rust_target: x86_64-apple-darwin
+            runner: macos-15-intel
+          - target_name: linux-x86_64
+            rust_target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+          - target_name: windows-x86_64
+            rust_target: x86_64-pc-windows-msvc
+            runner: windows-latest
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build release binary (unix)
+        if: runner.os != 'Windows'
+        env:
+          AITRIUM_RADIOTHERAPY_COMMIT_SHA: ${{ github.sha }}
+          AITRIUM_RADIOTHERAPY_BUILD_ID: ${{ github.run_id }}.${{ github.run_attempt }}
+        run: cargo build --release --target ${{ matrix.rust_target }}
+
+      - name: MCP startup smoke test (unix)
+        if: runner.os != 'Windows'
+        run: |
+          set -euo pipefail
+          DIST_DIR="$RUNNER_TEMP/aitrium-radiotherapy-dist"
+          mkdir -p "$DIST_DIR"
+          python3 scripts/smoke_mcp_startup.py \
+            --binary "target/${{ matrix.rust_target }}/release/aitrium-radiotherapy-server" \
+            --target "${{ matrix.target_name }}" \
+            --output "$DIST_DIR/smoke-report-${{ matrix.target_name }}.json"
+
+      - name: Package archive + checksum (unix)
+        if: runner.os != 'Windows'
+        run: |
+          set -euo pipefail
+          DIST_DIR="$RUNNER_TEMP/aitrium-radiotherapy-dist"
+          PKG_DIR="$RUNNER_TEMP/aitrium-radiotherapy-pkg"
+          mkdir -p "$DIST_DIR" "$PKG_DIR"
+          cp "target/${{ matrix.rust_target }}/release/aitrium-radiotherapy-server" "$PKG_DIR/aitrium-radiotherapy-server"
+          chmod +x "$PKG_DIR/aitrium-radiotherapy-server"
+          ARCHIVE="aitrium-radiotherapy-server-${{ matrix.target_name }}.tar.gz"
+          tar -czf "$DIST_DIR/$ARCHIVE" -C "$PKG_DIR" "aitrium-radiotherapy-server"
+          ARCHIVE_SHA="$(shasum -a 256 "$DIST_DIR/$ARCHIVE" | awk '{print $1}')"
+          echo "${ARCHIVE_SHA}  ${ARCHIVE}" > "$DIST_DIR/$ARCHIVE.sha256"
+          ls -la "$DIST_DIR"
+
+      - name: Build release binary (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          AITRIUM_RADIOTHERAPY_COMMIT_SHA: ${{ github.sha }}
+          AITRIUM_RADIOTHERAPY_BUILD_ID: ${{ github.run_id }}.${{ github.run_attempt }}
+        run: cargo build --release --target ${{ matrix.rust_target }}
+
+      - name: MCP startup smoke test (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $distDir = "$env:RUNNER_TEMP\aitrium-radiotherapy-dist"
+          New-Item -ItemType Directory -Force -Path $distDir | Out-Null
+          python scripts/smoke_mcp_startup.py `
+            --binary "target\${{ matrix.rust_target }}\release\aitrium-radiotherapy-server.exe" `
+            --target "${{ matrix.target_name }}" `
+            --output "$distDir\smoke-report-${{ matrix.target_name }}.json"
+
+      - name: Package archive + checksum (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $distDir = "$env:RUNNER_TEMP\aitrium-radiotherapy-dist"
+          $pkgDir = "$env:RUNNER_TEMP\aitrium-radiotherapy-pkg"
+          New-Item -ItemType Directory -Force -Path $distDir | Out-Null
+          New-Item -ItemType Directory -Force -Path $pkgDir | Out-Null
+          Copy-Item "target\${{ matrix.rust_target }}\release\aitrium-radiotherapy-server.exe" "$pkgDir\aitrium-radiotherapy-server.exe" -Force
+          $archive = "aitrium-radiotherapy-server-${{ matrix.target_name }}.zip"
+          Compress-Archive -Path "$pkgDir\aitrium-radiotherapy-server.exe" -DestinationPath "$distDir\$archive" -Force
+          $hash = (Get-FileHash "$distDir\$archive" -Algorithm SHA256).Hash.ToLower()
+          "$hash  $archive" | Out-File -FilePath "$distDir\$archive.sha256" -Encoding ascii -NoNewline
+          Get-ChildItem $distDir
+
+      - name: Upload packaged target artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aitrium-radiotherapy-${{ matrix.target_name }}
+          path: ${{ runner.temp }}/aitrium-radiotherapy-dist/*
+
+  assemble-release:
+    name: Assemble release assets
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download packaged target artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-dist
+          pattern: aitrium-radiotherapy-*
+          merge-multiple: true
+
+      - name: Build skill package + installer assets
+        run: |
+          set -euo pipefail
+          DIST_DIR="$PWD/release-dist"
+          tar -czf "$DIST_DIR/aitrium-radiotherapy-skill.tar.gz" -C "skill" "SKILL.md"
+          cp "install.sh" "$DIST_DIR/install.sh"
+          cp "install.ps1" "$DIST_DIR/install.ps1"
+          chmod +x "$DIST_DIR/install.sh"
+
+      - name: Compute checksums for non-target assets
+        run: |
+          set -euo pipefail
+          DIST_DIR="$PWD/release-dist"
+          for asset in aitrium-radiotherapy-skill.tar.gz install.sh install.ps1; do
+            sha256sum "$DIST_DIR/$asset" > "$DIST_DIR/$asset.sha256"
+          done
+
+      - name: Determine version/channel
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#aitrium-radiotherapy-v}"
+          CHANNEL="stable"
+          if [[ "$VERSION" == *"-beta."* ]]; then
+            CHANNEL="beta"
+          fi
+          echo "AITRIUM_RADIOTHERAPY_TAG=$TAG" >> "$GITHUB_ENV"
+          echo "AITRIUM_RADIOTHERAPY_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "AITRIUM_RADIOTHERAPY_CHANNEL=$CHANNEL" >> "$GITHUB_ENV"
+          echo "AITRIUM_RADIOTHERAPY_COMMIT_SHA=${GITHUB_SHA}" >> "$GITHUB_ENV"
+          echo "AITRIUM_RADIOTHERAPY_BUILD_ID=${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_ENV"
+
+      - name: Generate release manifest.json
+        run: |
+          python3 scripts/build_release_manifest.py \
+            --assets-dir "$PWD/release-dist" \
+            --version "$AITRIUM_RADIOTHERAPY_VERSION" \
+            --channel "$AITRIUM_RADIOTHERAPY_CHANNEL" \
+            --commit-sha "$AITRIUM_RADIOTHERAPY_COMMIT_SHA" \
+            --build-id "$AITRIUM_RADIOTHERAPY_BUILD_ID" \
+            --base-url "https://github.com/${{ github.repository }}/releases/download/${AITRIUM_RADIOTHERAPY_TAG}" \
+            --output "$PWD/release-dist/manifest.json"
+
+      - name: Upload GitHub Release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-beta.') }}
+          generate_release_notes: true
+          files: |
+            release-dist/*
+
+      - name: Determine GCS publish readiness
+        id: gcs_publish
+        env:
+          GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+          GCS_PROJECT_ID: ${{ secrets.GCS_PROJECT_ID }}
+          GCS_SA_KEY: ${{ secrets.GCS_SA_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$GCS_BUCKET_NAME" && -n "$GCS_PROJECT_ID" && -n "$GCS_SA_KEY" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Authenticate to Google Cloud (optional public distribution)
+        if: ${{ steps.gcs_publish.outputs.enabled == 'true' }}
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCS_SA_KEY }}
+
+      - name: Setup gcloud CLI (optional public distribution)
+        if: ${{ steps.gcs_publish.outputs.enabled == 'true' }}
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: ">= 363.0.0"
+          project_id: ${{ secrets.GCS_PROJECT_ID }}
+
+      - name: Build public distribution manifest (optional)
+        if: ${{ steps.gcs_publish.outputs.enabled == 'true' }}
+        env:
+          GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+        run: |
+          set -euo pipefail
+          DEST_PATH="${AITRIUM_RADIOTHERAPY_TAG}"
+          PUBLIC_BASE_URL="https://storage.googleapis.com/${GCS_BUCKET_NAME}/${DEST_PATH}"
+
+          echo "AITRIUM_PUBLIC_DIST_PATH=${DEST_PATH}" >> "$GITHUB_ENV"
+          echo "AITRIUM_PUBLIC_BASE_URL=${PUBLIC_BASE_URL}" >> "$GITHUB_ENV"
+
+          python3 scripts/build_release_manifest.py \
+            --assets-dir "$PWD/release-dist" \
+            --version "$AITRIUM_RADIOTHERAPY_VERSION" \
+            --channel "$AITRIUM_RADIOTHERAPY_CHANNEL" \
+            --commit-sha "$AITRIUM_RADIOTHERAPY_COMMIT_SHA" \
+            --build-id "$AITRIUM_RADIOTHERAPY_BUILD_ID" \
+            --base-url "$PUBLIC_BASE_URL" \
+            --output "$PWD/release-dist/manifest-public.json"
+
+      - name: Publish public distribution to GCS (optional)
+        if: ${{ steps.gcs_publish.outputs.enabled == 'true' }}
+        env:
+          GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+        run: |
+          set -euo pipefail
+          PUBLIC_DIR="$PWD/public-dist"
+          rm -rf "$PUBLIC_DIR"
+          mkdir -p "$PUBLIC_DIR"
+
+          cp "$PWD/release-dist/"* "$PUBLIC_DIR/"
+          cp "$PWD/release-dist/manifest-public.json" "$PUBLIC_DIR/manifest.json"
+
+          DEST="gs://${GCS_BUCKET_NAME}/${AITRIUM_PUBLIC_DIST_PATH}"
+          gsutil cp "$PUBLIC_DIR/"* "${DEST}/"
+          echo "Published public distribution to ${DEST}"
+          echo "Public install root: ${AITRIUM_PUBLIC_BASE_URL}"

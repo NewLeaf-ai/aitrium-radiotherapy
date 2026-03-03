@@ -231,7 +231,7 @@ if ($VerifyMcpOnly) {
 $repo =
   if ($Repo) { $Repo }
   elseif ($env:AITRIUM_RADIOTHERAPY_GITHUB_REPO) { $env:AITRIUM_RADIOTHERAPY_GITHUB_REPO }
-  else { "NewLeaf-ai/agentic-dicom-suite" }
+  else { "NewLeaf-ai/aitrium-radiotherapy" }
 $targetName = Resolve-TargetName
 $tag = Resolve-Tag -Repo $repo -RequestedVersion $Version -RequestedChannel $Channel
 $releaseBase = "https://github.com/$repo/releases/download/$tag"
