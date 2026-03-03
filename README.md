@@ -1,260 +1,222 @@
-# aitrium-radiotherapy
+# Aitrium Radiotherapy (Proof of Concept)
 
-`aitrium-radiotherapy` is a standalone radiotherapy analysis server with M1 tools:
+`aitrium-radiotherapy` is a local MCP server for radiotherapy DICOM analysis.
 
-- `rt_inspect`: scan and inspect DICOM RT study metadata.
-- `rt_dvh`: compute DVHs from explicit RTSTRUCT + RTDOSE paths (compact by default).
-- `rt_dvh_metrics`: compute atomic DVH metrics (D@V, V@D, stat fields) for token-efficient agent use.
+It exposes three tools:
+- `rt_inspect`
+- `rt_dvh`
+- `rt_dvh_metrics`
 
-It consumes the standalone [`aitrium-dvh`](https://github.com/NewLeaf-ai/aitrium-dvh) Rust crate as the computation source of truth and exposes language-neutral JSON contracts for Python and TypeScript SDKs.
+## Important Safety Notice
 
-## Distribution Model
+- This software is a proof of concept.
+- This software is not a medical device.
+- This software is not for clinical diagnosis, treatment planning, or patient-care decisions.
+- Use anonymized/de-identified datasets only.
+- Any outputs must be independently validated by qualified clinical professionals.
 
-- End users install the executable/runtime (`install.sh`, `install.ps1`, release binaries).
-- The server depends on `aitrium_dvh` via a pinned git tag (`v0.1.0`) for reproducible builds.
-- Distribution remains binary-first (`aitrium-radiotherapy-server`), while the engine crate evolves independently in its own repository.
+## Purpose
 
-## M1 Scope
+The goal is to provide deterministic local analysis that can be used by:
+- AI agent workflows (MCP clients such as Codex or Claude)
+- direct local CLI/script workflows (no Codex/Claude required)
 
-- Included: `rt_inspect`, `rt_dvh`, `rt_dvh_metrics`, schema contracts, Python SDK, TypeScript SDK.
-- Deferred to M2: `rt_overlap`, `rt_margin`.
+Core DVH computation is powered by the standalone [`aitrium-dvh`](https://github.com/NewLeaf-ai/aitrium-dvh) crate.
 
-## Transport Adapter Spike Outcome
+## PII and Data Handling
 
-The codebase includes a transport seam (`TransportAdapter`) and currently runs a manual stdio JSON-RPC adapter (`manual_jsonrpc`) by default.
+What this project does to reduce PII risk:
+- Analysis runs locally in the `aitrium-radiotherapy-server` process.
+- Tool execution does not require cloud APIs for DVH/inspection computation.
+- Recommended workflow is de-identified DICOM only.
 
-- `AITRIUM_RADIOTHERAPY_TRANSPORT=manual_jsonrpc` (default): active adapter.
-- `AITRIUM_RADIOTHERAPY_TRANSPORT=mcp_crate`: currently logs warning and falls back to manual adapter.
+Important warning for cloud-hosted agent platforms (for example, Codex/Claude cloud sessions):
+- MCP tool arguments and tool results may be processed by the model provider platform.
+- If paths, metadata, or outputs contain identifiers, those identifiers may leave your local machine through the agent workflow.
 
-This keeps tool business logic transport-agnostic while MCP crate integration is finalized.
+Recommended controls:
+- Use anonymized/de-identified datasets only.
+- Avoid patient identifiers in file/directory names.
+- Review provider retention/logging settings before use.
+- For sensitive workflows, use local/offline agent deployments.
 
-## Repository Layout
+## Installation
 
-```
-aitrium-radiotherapy/
-├── Cargo.toml
-├── src/
-│   ├── lib.rs
-│   ├── main.rs
-│   ├── types.rs
-│   ├── tools/
-│   │   ├── mod.rs
-│   │   ├── inspect.rs
-│   │   └── dvh.rs
-│   ├── inspect/
-│   │   ├── mod.rs
-│   │   ├── scanner.rs
-│   │   ├── structure_reader.rs
-│   │   ├── plan_reader.rs
-│   │   └── dose_reader.rs
-│   └── transport/
-│       ├── mod.rs
-│       └── manual_jsonrpc.rs
-├── schemas/
-├── sdk/
-│   ├── python/
-│   └── typescript/
-├── skill/
-│   └── SKILL.md
-├── tests/
-│   └── fixtures/
-└── install.sh
-```
-
-## Build
-
-```bash
-cargo build
-```
-
-## Install (prebuilt, no toolchain)
-
-macOS/Linux:
+### macOS/Linux (GitHub Release)
 
 ```bash
 curl -fsSL https://github.com/NewLeaf-ai/aitrium-radiotherapy/releases/latest/download/install.sh | bash
 ```
 
-For private repositories, authenticate first:
-
-```bash
-export GITHUB_TOKEN=YOUR_TOKEN_WITH_REPO_READ
-curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-  https://github.com/NewLeaf-ai/aitrium-radiotherapy/releases/latest/download/install.sh | bash
-```
-
-For public GCS-hosted distribution assets:
+### macOS/Linux (Public GCS Distribution)
 
 ```bash
 curl -fsSL "https://storage.googleapis.com/<bucket>/aitrium-radiotherapy-vX.Y.Z/install.sh" | \
   bash -s -- --release-base-url "https://storage.googleapis.com/<bucket>/aitrium-radiotherapy-vX.Y.Z"
 ```
 
-Windows PowerShell:
+### Windows PowerShell
 
 ```powershell
 irm https://github.com/NewLeaf-ai/aitrium-radiotherapy/releases/latest/download/install.ps1 | iex
 ```
 
-Known-bad release:
-
-- `aitrium-radiotherapy-v0.1.0-beta.1` is deprecated due MCP startup reliability defects. Use `beta.2+` or stable tags.
-
-Installer flags:
-
+Common installer flags:
 - `--version <semver|latest>`
 - `--channel stable|beta`
 - `--agent codex|claude|both|none`
 - `--no-skill`
 - `--no-mcp`
 - `--bin-dir <path>`
-- `--repo <owner/repo>`
 - `--release-base-url <url>`
 - `--manifest-url <url>`
-- `--skip-self-test` (dev-only)
-- `--self-test-only`
-- `--verify-mcp-only`
 
-Environment overrides:
-
-- `AITRIUM_RADIOTHERAPY_RELEASE_BASE_URL`
-- `AITRIUM_RADIOTHERAPY_MANIFEST_URL`
-- `AITRIUM_GITHUB_TOKEN` / `GITHUB_TOKEN` / `GH_TOKEN`
-
-Release assets include per-target archives, checksums, installers, skill package, and `manifest.json`.
-
-## Fast Dev Refresh
-
-Use this during development to quickly rebuild and refresh skills + MCP config for both Codex and Claude:
+## Verify Installation
 
 ```bash
-cd /path/to/aitrium-radiotherapy
+aitrium-radiotherapy-server --version
+aitrium-radiotherapy-server self-test --json
+```
+
+## Updating Existing Installations
+
+Re-running the installer is the supported update path. It is idempotent and replaces the installed runtime binary.
+
+### Update to latest stable
+
+```bash
+curl -fsSL https://github.com/NewLeaf-ai/aitrium-radiotherapy/releases/latest/download/install.sh | bash
+```
+
+### Update from public GCS release
+
+```bash
+BASE="https://storage.googleapis.com/<bucket>/aitrium-radiotherapy-vX.Y.Z"
+curl -fsSL "$BASE/install.sh" | bash -s -- --release-base-url "$BASE"
+```
+
+### Pin a specific version (recommended for reproducibility)
+
+```bash
+curl -fsSL https://github.com/NewLeaf-ai/aitrium-radiotherapy/releases/latest/download/install.sh | \
+  bash -s -- --version 0.1.2
+```
+
+## Replace a Prior Test Installation
+
+If you previously registered a test server name (for example `aitrium-radiotherapy-test`):
+
+1. Remove old test MCP registrations:
+```bash
+codex mcp remove aitrium-radiotherapy-test || true
+claude mcp remove aitrium-radiotherapy-test -s user || true
+```
+
+2. Reinstall current release to your intended bin path:
+```bash
+curl -fsSL https://github.com/NewLeaf-ai/aitrium-radiotherapy/releases/latest/download/install.sh | \
+  bash -s -- --agent both --bin-dir "$HOME/.local/bin"
+```
+
+3. Verify active MCP registrations:
+```bash
+codex mcp get aitrium-radiotherapy --json
+claude mcp get aitrium-radiotherapy -s user
+```
+
+## Use Case A: Agent Workflow (MCP)
+
+Use this path when you want Codex/Claude to call tools automatically.
+
+Manual registration (if you skipped installer auto-registration):
+
+```bash
+codex mcp add aitrium-radiotherapy -- "$HOME/.local/bin/aitrium-radiotherapy-server"
+claude mcp add --scope user aitrium-radiotherapy "$HOME/.local/bin/aitrium-radiotherapy-server"
+```
+
+Verify registration:
+
+```bash
+codex mcp get aitrium-radiotherapy --json
+claude mcp get aitrium-radiotherapy -s user
+```
+
+Then ask your agent to call:
+- `rt_inspect` for dataset discovery
+- `rt_dvh_metrics` for compact rule-oriented metrics
+- `rt_dvh` when full DVH curves are needed
+
+## Use Case B: Direct Local CLI Workflow (No Codex/Claude)
+
+Use this path when you cannot or do not want to use cloud agents.
+
+### 1) Inspect a DICOM directory
+
+```bash
+aitrium-radiotherapy-server inspect --path /path/to/dicom_dir
+```
+
+### 2) Compute DVH output
+
+```bash
+aitrium-radiotherapy-server dvh \
+  --rtstruct /path/to/RTSTRUCT.dcm \
+  --rtdose /path/to/RTDOSE.dcm \
+  --structure PTV_60 \
+  --structure Heart
+```
+
+### 3) Compute targeted metrics
+
+```bash
+aitrium-radiotherapy-server dvh-metrics \
+  --rtstruct /path/to/RTSTRUCT.dcm \
+  --rtdose /path/to/RTDOSE.dcm \
+  --metric 'd95=dav:95' \
+  --metric 'v20=vad:20:percent' \
+  --metric 'mean=stat:mean_gy'
+```
+
+Alternative metrics input forms:
+- `--metrics-json '<json-array>'`
+- `--metrics-file /path/to/metrics.json`
+
+All command outputs are JSON.
+
+## Practical Use Cases
+
+- Local DICOM triage: inspect structures, plans, and dose objects in a dataset.
+- Agent-assisted RTQA prototyping: compute DVH metrics for rule evaluation workflows.
+- Batch research analysis: run repeatable metric extraction across anonymized RT datasets.
+
+## Tool Summary
+
+- `rt_inspect`: scan DICOM RT study metadata from a folder path.
+- `rt_dvh`: compute DVH outputs from explicit `RTSTRUCT` + `RTDOSE` paths.
+- `rt_dvh_metrics`: compute compact metrics (for example `D@V`, `V@D`, selected stats).
+
+Canonical schemas are in `schemas/`.
+
+## Coming Soon
+
+- Local-agent setup guides (fully local MCP + local model workflows).
+- Local privacy hardening checklist for regulated environments.
+- Reference integrations for local-first agent runtimes.
+
+## Development
+
+```bash
+cargo check
+cargo test
+```
+
+Local refresh helper:
+
+```bash
 ./scripts/dev-refresh.sh
 ```
 
-Notes:
+## License
 
-- Default uses `target/debug/aitrium-radiotherapy-server` for faster iteration.
-- Use `./scripts/dev-refresh.sh --release` to point MCP at release builds.
-- Use `./scripts/dev-refresh.sh --copy-local` if you also want `~/.local/bin/aitrium-radiotherapy-server` updated.
-
-## Run
-
-```bash
-cargo run
-```
-
-The server supports stdio JSON-RPC in both:
-
-- newline-delimited JSON mode
-- framed mode (`Content-Length` headers; header order agnostic)
-
-## Runtime diagnostics
-
-- `aitrium-radiotherapy-server --build-info --json`
-- `aitrium-radiotherapy-server self-test --json`
-
-`self-test` validates version, newline initialize, framed initialize (header order variants), and `tools/list`.
-
-## Agent Integration Note
-
-`rt_inspect`, `rt_dvh`, and `rt_dvh_metrics` are MCP tool names, not shell commands.
-
-- Correct: call tool `aitrium-radiotherapy/rt_inspect`, `aitrium-radiotherapy/rt_dvh`, or `aitrium-radiotherapy/rt_dvh_metrics` through an MCP-capable client.
-- Incorrect: running `which rt_inspect` or executing `rt_inspect` in shell.
-
-### Minimal Protocol Examples
-
-Initialize:
-
-```json
-{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}
-```
-
-List tools:
-
-```json
-{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}
-```
-
-Call `rt_inspect`:
-
-```json
-{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"rt_inspect","arguments":{"path":"/path/to/dicom"}}}
-```
-
-Call `rt_dvh`:
-
-```json
-{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"rt_dvh","arguments":{"rtstruct_path":"/path/RS.dcm","rtdose_path":"/path/RD.dcm","structures":["PTV_60","Heart"],"interpolation":true,"z_segments":1,"include_curves":false}}}
-```
-
-Call `rt_dvh_metrics`:
-
-```json
-{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"rt_dvh_metrics","arguments":{"rtstruct_path":"/path/RS.dcm","rtdose_path":"/path/RD.dcm","structures":["PTV_60"],"metrics":[{"id":"d95","type":"dose_at_volume","volume_percent":95},{"id":"v60","type":"volume_at_dose","dose_gy":60,"volume_unit":"percent"},{"id":"mean","type":"stat","stat":"mean_gy"}]}}}
-```
-
-## Contract Schemas
-
-Canonical schemas live in `schemas/`:
-
-- `rt_inspect.input.schema.json`
-- `rt_inspect.output.schema.json`
-- `rt_dvh.input.schema.json`
-- `rt_dvh.output.schema.json`
-- `rt_dvh_metrics.input.schema.json`
-- `rt_dvh_metrics.output.schema.json`
-- `error.schema.json`
-
-All success responses include `schema_version` (currently `1.0.0`).
-
-## Python SDK
-
-Path: `sdk/python`
-
-```bash
-cd /path/to/aitrium-radiotherapy/sdk/python
-pip install -e .
-```
-
-Example:
-
-```python
-from aitrium_radiotherapy_client import AitriumRadiotherapyClient
-
-with AitriumRadiotherapyClient() as client:
-    tools = client.list_tools()
-    inspect = client.inspect("/path/to/dicom")
-```
-
-## TypeScript SDK
-
-Path: `sdk/typescript`
-
-```bash
-cd /path/to/aitrium-radiotherapy/sdk/typescript
-npm install
-npm run build
-```
-
-Example:
-
-```ts
-import { AitriumRadiotherapyClient } from "@aitrium-radiotherapy/client";
-
-const client = new AitriumRadiotherapyClient(["aitrium-radiotherapy-server"]);
-const tools = await client.listTools();
-```
-
-## Quality Gates
-
-- Rust: `cargo fmt --check`, `cargo clippy --all-targets`, `cargo test`
-- Schemas: `python3 scripts/check_schemas.py`
-- Python SDK tests: `cd sdk/python && pytest`
-- TypeScript SDK tests: `cd sdk/typescript && npm test`
-
-## Notes
-
-- M1 requires explicit `rtstruct_path` + `rtdose_path` for DVH tools to avoid heuristic mismatches.
-- `rt_dvh` defaults to compact output (`include_curves=false`) and only returns full arrays when explicitly requested.
+MIT
