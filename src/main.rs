@@ -1,8 +1,8 @@
-use anyhow::{bail, Context};
 use aitrium_radiotherapy_server::self_test::{current_build_info, run_self_test, SelfTestReport};
 use aitrium_radiotherapy_server::tools::ToolRegistry;
 use aitrium_radiotherapy_server::transport::manual_jsonrpc::ManualJsonRpcTransport;
 use aitrium_radiotherapy_server::transport::TransportAdapter;
+use anyhow::{bail, Context};
 use serde_json::{json, Map, Value};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -76,13 +76,17 @@ fn print_help() {
     println!("  aitrium-radiotherapy-server self-test [--json]         Run runtime self-test");
     println!("  aitrium-radiotherapy-server inspect --path <dir>");
     println!("  aitrium-radiotherapy-server dvh --rtstruct <RS.dcm> --rtdose <RD.dcm> [options]");
-    println!("  aitrium-radiotherapy-server dvh-metrics --rtstruct <RS.dcm> --rtdose <RD.dcm> [options]");
+    println!(
+        "  aitrium-radiotherapy-server dvh-metrics --rtstruct <RS.dcm> --rtdose <RD.dcm> [options]"
+    );
     println!();
     println!("dvh options:");
     println!("  --structures <name1,name2>      Comma-separated structure names");
     println!("  --structure <name>              Repeatable structure name");
     println!("  --interpolation [true|false]    Enable XY interpolation (default false)");
-    println!("  --z-segments <N>                Interpolation segments between dose planes (default 0)");
+    println!(
+        "  --z-segments <N>                Interpolation segments between dose planes (default 0)"
+    );
     println!("  --include-curves [true|false]   Include DVH arrays (default false)");
     println!("  --max-points <N>                Downsample curve points");
     println!("  --precision <N>                 Round curve values to N decimals");
@@ -91,7 +95,9 @@ fn print_help() {
     println!("  --structures <name1,name2>      Comma-separated structure names");
     println!("  --structure <name>              Repeatable structure name");
     println!("  --interpolation [true|false]    Enable XY interpolation (default false)");
-    println!("  --z-segments <N>                Interpolation segments between dose planes (default 0)");
+    println!(
+        "  --z-segments <N>                Interpolation segments between dose planes (default 0)"
+    );
     println!("  --metrics-json '<json-array>'   Metrics as JSON array");
     println!("  --metrics-file <path.json>      Metrics JSON file");
     println!("  --metric <expr>                 Repeatable compact metric expression");
@@ -349,9 +355,7 @@ fn parse_metric_specs(args: &CliArgs) -> anyhow::Result<Vec<Value>> {
         );
     }
     if sources > 1 {
-        bail!(
-            "Use exactly one of --metrics-json, --metrics-file, or --metric (repeatable)"
-        );
+        bail!("Use exactly one of --metrics-json, --metrics-file, or --metric (repeatable)");
     }
 
     if let Some(raw) = args.value("metrics-json") {
@@ -419,7 +423,10 @@ fn parse_metric_expression(expression: &str) -> anyhow::Result<Value> {
                 .trim()
                 .parse::<f64>()
                 .with_context(|| format!("Invalid volume percent in metric: {trimmed}"))?;
-            metric.insert("type".to_string(), Value::String("dose_at_volume".to_string()));
+            metric.insert(
+                "type".to_string(),
+                Value::String("dose_at_volume".to_string()),
+            );
             metric.insert("volume_percent".to_string(), Value::from(volume_percent));
         }
         "vad" | "volume_at_dose" => {
@@ -437,7 +444,10 @@ fn parse_metric_expression(expression: &str) -> anyhow::Result<Value> {
                     trimmed
                 );
             }
-            metric.insert("type".to_string(), Value::String("volume_at_dose".to_string()));
+            metric.insert(
+                "type".to_string(),
+                Value::String("volume_at_dose".to_string()),
+            );
             metric.insert("dose_gy".to_string(), Value::from(dose_gy));
             metric.insert(
                 "volume_unit".to_string(),
@@ -468,7 +478,11 @@ fn parse_metric_expression(expression: &str) -> anyhow::Result<Value> {
     Ok(Value::Object(metric))
 }
 
-fn execute_cli_tool(registry: &ToolRegistry, tool_name: &str, arguments: Value) -> anyhow::Result<()> {
+fn execute_cli_tool(
+    registry: &ToolRegistry,
+    tool_name: &str,
+    arguments: Value,
+) -> anyhow::Result<()> {
     match registry.call(tool_name, arguments) {
         Ok(output) => {
             println!("{}", serde_json::to_string_pretty(&output)?);
@@ -525,8 +539,8 @@ fn run_stdio_server() -> anyhow::Result<()> {
         .init();
 
     let registry = ToolRegistry::new();
-    let transport =
-        std::env::var("AITRIUM_RADIOTHERAPY_TRANSPORT").unwrap_or_else(|_| "manual_jsonrpc".to_string());
+    let transport = std::env::var("AITRIUM_RADIOTHERAPY_TRANSPORT")
+        .unwrap_or_else(|_| "manual_jsonrpc".to_string());
 
     match transport.as_str() {
         "manual_jsonrpc" | "manual" => ManualJsonRpcTransport.run(&registry),

@@ -1,6 +1,6 @@
-use pretty_assertions::assert_eq;
 use aitrium_radiotherapy_server::tools::ToolRegistry;
 use aitrium_radiotherapy_server::types::ErrorCode;
+use pretty_assertions::assert_eq;
 use serde_json::json;
 
 #[test]
