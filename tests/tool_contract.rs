@@ -17,7 +17,11 @@ fn lists_expected_tools() {
         vec![
             "rt_inspect".to_string(),
             "rt_dvh".to_string(),
-            "rt_dvh_metrics".to_string()
+            "rt_dvh_metrics".to_string(),
+            "rt_anonymize_metadata".to_string(),
+            "rt_anonymize_template_get".to_string(),
+            "rt_anonymize_template_update".to_string(),
+            "rt_anonymize_template_reset".to_string()
         ]
     );
 }
@@ -76,4 +80,58 @@ fn dvh_metrics_returns_file_not_found_for_missing_files() {
 
     let error = result.expect_err("expected error");
     assert_eq!(error.code.to_string(), ErrorCode::FileNotFound.to_string());
+}
+
+#[test]
+fn anonymize_returns_file_not_found_for_missing_source() {
+    let registry = ToolRegistry::new();
+    let result = registry.call(
+        "rt_anonymize_metadata",
+        json!({
+          "source_path": "/missing/source/path"
+        }),
+    );
+
+    let error = result.expect_err("expected error");
+    assert_eq!(error.code.to_string(), ErrorCode::FileNotFound.to_string());
+}
+
+#[test]
+fn anonymize_template_get_returns_effective_template() {
+    let registry = ToolRegistry::new();
+    let result = registry
+        .call("rt_anonymize_template_get", json!({}))
+        .expect("expected successful template get");
+
+    assert_eq!(
+        result
+            .get("template_name")
+            .and_then(serde_json::Value::as_str),
+        Some("aitrium_template")
+    );
+    assert!(result.get("policy").is_some());
+}
+
+#[test]
+fn anonymize_template_update_rejects_unknown_template_name() {
+    let registry = ToolRegistry::new();
+    let result = registry.call(
+        "rt_anonymize_template_update",
+        json!({"template": "not_supported"}),
+    );
+
+    let error = result.expect_err("expected error");
+    assert_eq!(error.code.to_string(), ErrorCode::InvalidInput.to_string());
+}
+
+#[test]
+fn anonymize_template_reset_rejects_unknown_template_name() {
+    let registry = ToolRegistry::new();
+    let result = registry.call(
+        "rt_anonymize_template_reset",
+        json!({"template": "not_supported"}),
+    );
+
+    let error = result.expect_err("expected error");
+    assert_eq!(error.code.to_string(), ErrorCode::InvalidInput.to_string());
 }

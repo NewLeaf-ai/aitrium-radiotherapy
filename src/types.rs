@@ -307,3 +307,169 @@ pub struct ToolSpec {
 fn default_include_curves() -> bool {
     false
 }
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct RtAnonymizeMetadataRequest {
+    pub source_path: String,
+    #[serde(default)]
+    pub output_path: Option<String>,
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub policy_path: Option<String>,
+    #[serde(default)]
+    pub template: Option<String>,
+    #[serde(default)]
+    pub policy_overrides: Option<Value>,
+    #[serde(default = "default_true")]
+    pub dry_run: bool,
+    #[serde(default)]
+    pub allow_existing_output: bool,
+    #[serde(default)]
+    pub report_path: Option<String>,
+    #[serde(default = "default_max_workers")]
+    pub max_workers: u32,
+    #[serde(default = "default_true")]
+    pub fail_on_error: bool,
+    #[serde(default)]
+    pub include_trace: bool,
+    #[serde(default)]
+    pub deterministic_uid_secret: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct RtAnonymizeTemplateGetRequest {
+    #[serde(default)]
+    pub template: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct RtAnonymizeTemplateUpdateRequest {
+    #[serde(default)]
+    pub template: Option<String>,
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub policy_overrides: Option<Value>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct RtAnonymizeTemplateResetRequest {
+    #[serde(default)]
+    pub template: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RtAnonymizeMetadataResponse {
+    pub schema_version: String,
+    pub mode: String,
+    pub source_summary: AnonymizeSourceSummary,
+    pub output_summary: AnonymizeOutputSummary,
+    pub action_counts: AnonymizeActionCounts,
+    pub rule_counts: AnonymizeRuleCounts,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub warnings: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub errors: Vec<String>,
+    pub safety_checks: AnonymizeSafetyChecks,
+    pub duration_ms: u64,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub decision_trace: Vec<AnonymizeDecisionTrace>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RtAnonymizeTemplateGetResponse {
+    pub schema_version: String,
+    pub template_name: String,
+    pub template_path: String,
+    pub source: String,
+    pub policy: Value,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RtAnonymizeTemplateUpdateResponse {
+    pub schema_version: String,
+    pub template_name: String,
+    pub template_path: String,
+    pub source: String,
+    pub policy: Value,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RtAnonymizeTemplateResetResponse {
+    pub schema_version: String,
+    pub template_name: String,
+    pub template_path: String,
+    pub deleted: bool,
+    pub source_after_reset: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct AnonymizeSourceSummary {
+    pub source_path: String,
+    pub total_files: u64,
+    pub dicom_files: u64,
+    pub non_dicom_files: u64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct AnonymizeOutputSummary {
+    pub output_path: Option<String>,
+    pub files_written: u64,
+    pub dicom_written: u64,
+    pub non_dicom_copied: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct AnonymizeActionCounts {
+    pub keep: u64,
+    pub remove: u64,
+    pub empty: u64,
+    pub replace: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct AnonymizeRuleCounts {
+    pub tag: u64,
+    pub vr: u64,
+    pub default_private: u64,
+    pub default_unknown_public: u64,
+    pub default_keep: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct AnonymizeSafetyChecks {
+    pub source_exists: bool,
+    pub source_is_directory: bool,
+    pub output_not_source: bool,
+    pub output_not_inside_source: bool,
+    pub output_is_new_or_explicit_override: bool,
+    pub fail_closed: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct AnonymizeDecisionTrace {
+    pub file: String,
+    pub selector: String,
+    pub keyword: Option<String>,
+    pub vr: String,
+    pub action: String,
+    pub rule_source: String,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_max_workers() -> u32 {
+    let parallelism = std::thread::available_parallelism()
+        .map(|value| value.get())
+        .unwrap_or(1);
+    std::cmp::min(parallelism, 8) as u32
+}

@@ -43,6 +43,9 @@ jobs:
       - name: Rust tests
         run: cargo test
 
+      - name: Rust anonymization tests
+        run: cargo test anonymize -- --nocapture
+
       - name: Build debug binary for SDK integration tests
         run: cargo build
 

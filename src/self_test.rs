@@ -188,7 +188,15 @@ fn check_tools_list(exe: &Path) -> Result<String> {
         .filter_map(|tool| tool.get("name").and_then(Value::as_str))
         .collect::<BTreeSet<_>>();
 
-    for required in ["rt_inspect", "rt_dvh", "rt_dvh_metrics"] {
+    for required in [
+        "rt_inspect",
+        "rt_dvh",
+        "rt_dvh_metrics",
+        "rt_anonymize_metadata",
+        "rt_anonymize_template_get",
+        "rt_anonymize_template_update",
+        "rt_anonymize_template_reset",
+    ] {
         if !tool_names.contains(required) {
             bail!("tools/list missing required tool '{required}'");
         }

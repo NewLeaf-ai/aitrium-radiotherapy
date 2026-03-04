@@ -8,6 +8,10 @@ from typing import Any, Iterable
 from aitrium_radiotherapy_client.exceptions import AitriumRadiotherapyError, TransportError, raise_for_error
 from aitrium_radiotherapy_client.models import (
     ApiErrorModel,
+    RtAnonymizeMetadataResponse,
+    RtAnonymizeTemplateGetResponse,
+    RtAnonymizeTemplateResetResponse,
+    RtAnonymizeTemplateUpdateResponse,
     RtDvhMetricsResponse,
     RtDvhResponse,
     RtInspectResponse,
@@ -113,6 +117,88 @@ class AitriumRadiotherapyClient:
 
         payload = self._call_tool("rt_dvh_metrics", args)
         return RtDvhMetricsResponse.model_validate(payload)
+
+    def anonymize_metadata(
+        self,
+        source_path: str,
+        output_path: str | None = None,
+        policy: dict[str, Any] | None = None,
+        policy_path: str | None = None,
+        template: str | None = None,
+        policy_overrides: dict[str, Any] | None = None,
+        dry_run: bool = True,
+        allow_existing_output: bool = False,
+        report_path: str | None = None,
+        max_workers: int | None = None,
+        fail_on_error: bool = True,
+        include_trace: bool = False,
+        deterministic_uid_secret: str | None = None,
+    ) -> RtAnonymizeMetadataResponse:
+        args: dict[str, Any] = {
+            "source_path": source_path,
+            "dry_run": dry_run,
+            "allow_existing_output": allow_existing_output,
+            "fail_on_error": fail_on_error,
+            "include_trace": include_trace,
+        }
+        if output_path is not None:
+            args["output_path"] = output_path
+        if policy is not None:
+            args["policy"] = policy
+        if policy_path is not None:
+            args["policy_path"] = policy_path
+        if template is not None:
+            args["template"] = template
+        if policy_overrides is not None:
+            args["policy_overrides"] = policy_overrides
+        if report_path is not None:
+            args["report_path"] = report_path
+        if max_workers is not None:
+            args["max_workers"] = max_workers
+        if deterministic_uid_secret is not None:
+            args["deterministic_uid_secret"] = deterministic_uid_secret
+
+        payload = self._call_tool("rt_anonymize_metadata", args)
+        return RtAnonymizeMetadataResponse.model_validate(payload)
+
+    def get_anonymize_template(
+        self,
+        template: str | None = None,
+    ) -> RtAnonymizeTemplateGetResponse:
+        args: dict[str, Any] = {}
+        if template is not None:
+            args["template"] = template
+
+        payload = self._call_tool("rt_anonymize_template_get", args)
+        return RtAnonymizeTemplateGetResponse.model_validate(payload)
+
+    def update_anonymize_template(
+        self,
+        template: str | None = None,
+        policy: dict[str, Any] | None = None,
+        policy_overrides: dict[str, Any] | None = None,
+    ) -> RtAnonymizeTemplateUpdateResponse:
+        args: dict[str, Any] = {}
+        if template is not None:
+            args["template"] = template
+        if policy is not None:
+            args["policy"] = policy
+        if policy_overrides is not None:
+            args["policy_overrides"] = policy_overrides
+
+        payload = self._call_tool("rt_anonymize_template_update", args)
+        return RtAnonymizeTemplateUpdateResponse.model_validate(payload)
+
+    def reset_anonymize_template(
+        self,
+        template: str | None = None,
+    ) -> RtAnonymizeTemplateResetResponse:
+        args: dict[str, Any] = {}
+        if template is not None:
+            args["template"] = template
+
+        payload = self._call_tool("rt_anonymize_template_reset", args)
+        return RtAnonymizeTemplateResetResponse.model_validate(payload)
 
     def _call_tool(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         result = self._rpc("tools/call", {"name": name, "arguments": arguments})

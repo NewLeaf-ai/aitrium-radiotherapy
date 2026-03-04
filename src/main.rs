@@ -2,6 +2,7 @@ use aitrium_radiotherapy_server::self_test::{current_build_info, run_self_test, 
 use aitrium_radiotherapy_server::tools::ToolRegistry;
 use aitrium_radiotherapy_server::transport::manual_jsonrpc::ManualJsonRpcTransport;
 use aitrium_radiotherapy_server::transport::TransportAdapter;
+use aitrium_radiotherapy_server::types::ErrorCode;
 use anyhow::{bail, Context};
 use serde_json::{json, Map, Value};
 use std::collections::{BTreeMap, BTreeSet};
@@ -52,6 +53,9 @@ fn main() -> anyhow::Result<()> {
         "inspect" => run_cli_inspect(&registry, &args[1..]),
         "dvh" => run_cli_dvh(&registry, &args[1..]),
         "dvh-metrics" | "dvh_metrics" => run_cli_dvh_metrics(&registry, &args[1..]),
+        "anonymize-metadata" | "anonymize_metadata" => {
+            run_cli_anonymize_metadata(&registry, &args[1..])
+        }
         "--help" | "-h" | "help" => {
             print_help();
             Ok(())
@@ -79,6 +83,7 @@ fn print_help() {
     println!(
         "  aitrium-radiotherapy-server dvh-metrics --rtstruct <RS.dcm> --rtdose <RD.dcm> [options]"
     );
+    println!("  aitrium-radiotherapy-server anonymize-metadata --source <dir> [options]");
     println!();
     println!("dvh options:");
     println!("  --structures <name1,name2>      Comma-separated structure names");
@@ -106,6 +111,21 @@ fn print_help() {
     println!("  --metric 'd95=dav:95'");
     println!("  --metric 'v20=vad:20:percent'");
     println!("  --metric 'mean=stat:mean_gy'");
+    println!();
+    println!("anonymize-metadata options:");
+    println!("  --source <dir>                  Source directory (recursive)");
+    println!("  --output <dir>                  Output directory (required with --write)");
+    println!("  --policy-file <path>            Policy file in JSON/YAML");
+    println!("  --policy-json '<json|yaml>'     Inline policy content");
+    println!("  --template <name>               Built-in/runtime template: strict_phi_safe|research_balanced|minimal_explicit|aitrium_default|aitrium_template");
+    println!("  --policy-override-json '<json>' Merge override object into selected base policy");
+    println!("  --write                         Enable write mode (default dry-run)");
+    println!("  --allow-existing-output         Allow writing into an existing output directory");
+    println!("  --workers <N>                   Advisory worker setting");
+    println!("  --report-out <path>             Write JSON report to file");
+    println!("  --include-trace                 Include per-element decision trace in output");
+    println!("  --best-effort                   Continue after per-file errors");
+    println!("  --deterministic-uid-secret <s>  Optional stable secret for repeatable UID mapping");
 }
 
 #[derive(Debug, Default)]
@@ -335,6 +355,110 @@ fn run_cli_dvh_metrics(registry: &ToolRegistry, tokens: &[String]) -> anyhow::Re
     }
 
     execute_cli_tool(registry, "rt_dvh_metrics", Value::Object(payload))
+}
+
+fn run_cli_anonymize_metadata(registry: &ToolRegistry, tokens: &[String]) -> anyhow::Result<()> {
+    let args = CliArgs::parse(tokens)?;
+
+    let source_path = args
+        .value("source")
+        .map(ToOwned::to_owned)
+        .or_else(|| args.positionals.first().cloned())
+        .context("anonymize-metadata requires --source <dir> (or first positional)")?;
+
+    let output_path = args
+        .value("output")
+        .map(ToOwned::to_owned)
+        .or_else(|| args.positionals.get(1).cloned());
+
+    if args.positionals.len() > 2 {
+        bail!("Too many positional arguments for anonymize-metadata");
+    }
+
+    let dry_run = !args.flag("write");
+    let allow_existing_output = args.parse_bool("allow-existing-output", false)?;
+    let include_trace = args.parse_bool("include-trace", false)?;
+    let fail_on_error = !args.flag("best-effort");
+    let max_workers = args.parse_u32("workers")?;
+    let report_out = args.value("report-out").map(ToOwned::to_owned);
+    let deterministic_uid_secret = args
+        .value("deterministic-uid-secret")
+        .map(ToOwned::to_owned);
+
+    let mut payload = Map::new();
+    payload.insert("source_path".to_string(), Value::String(source_path));
+    payload.insert("dry_run".to_string(), Value::Bool(dry_run));
+    payload.insert(
+        "allow_existing_output".to_string(),
+        Value::Bool(allow_existing_output),
+    );
+    payload.insert("include_trace".to_string(), Value::Bool(include_trace));
+    payload.insert("fail_on_error".to_string(), Value::Bool(fail_on_error));
+
+    if let Some(path) = output_path {
+        payload.insert("output_path".to_string(), Value::String(path));
+    }
+    if let Some(workers) = max_workers {
+        payload.insert("max_workers".to_string(), Value::from(workers));
+    }
+    if let Some(path) = report_out.clone() {
+        payload.insert("report_path".to_string(), Value::String(path));
+    }
+    if let Some(secret) = deterministic_uid_secret {
+        payload.insert(
+            "deterministic_uid_secret".to_string(),
+            Value::String(secret),
+        );
+    }
+    if let Some(template) = args.value("template") {
+        payload.insert("template".to_string(), Value::String(template.to_string()));
+    }
+    if let Some(raw) = args.value("policy-json") {
+        payload.insert(
+            "policy".to_string(),
+            parse_json_or_yaml(raw, "--policy-json")?,
+        );
+    }
+    if let Some(path) = args.value("policy-file") {
+        let raw = fs::read_to_string(path)
+            .with_context(|| format!("Failed to read policy file: {path}"))?;
+        payload.insert(
+            "policy".to_string(),
+            parse_json_or_yaml(&raw, "--policy-file")?,
+        );
+    }
+    if let Some(raw) = args.value("policy-override-json") {
+        let value: Value = serde_json::from_str(raw)
+            .with_context(|| "Invalid JSON in --policy-override-json".to_string())?;
+        payload.insert("policy_overrides".to_string(), value);
+    }
+
+    match registry.call("rt_anonymize_metadata", Value::Object(payload)) {
+        Ok(output) => {
+            let pretty = serde_json::to_string_pretty(&output)?;
+            if let Some(path) = report_out {
+                fs::write(&path, format!("{pretty}\n"))
+                    .with_context(|| format!("Failed to write report file: {path}"))?;
+            }
+            println!("{pretty}");
+            Ok(())
+        }
+        Err(error) => {
+            eprintln!("{}", serde_json::to_string_pretty(&error)?);
+            if error.code.to_string() == ErrorCode::InvalidInput.to_string() {
+                std::process::exit(2);
+            }
+            std::process::exit(3);
+        }
+    }
+}
+
+fn parse_json_or_yaml(raw: &str, source: &str) -> anyhow::Result<Value> {
+    if let Ok(value) = serde_json::from_str::<Value>(raw) {
+        return Ok(value);
+    }
+
+    serde_yaml::from_str::<Value>(raw).with_context(|| format!("Invalid JSON/YAML in {source}"))
 }
 
 fn parse_metric_specs(args: &CliArgs) -> anyhow::Result<Vec<Value>> {

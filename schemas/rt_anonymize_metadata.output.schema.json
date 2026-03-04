@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/rt_anonymize_metadata.output.schema.json",
+  "title": "rt_anonymize_metadata output",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "mode",
+    "source_summary",
+    "output_summary",
+    "action_counts",
+    "rule_counts",
+    "safety_checks",
+    "duration_ms"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "mode": { "type": "string", "enum": ["dry_run", "write"] },
+    "source_summary": {
+      "type": "object",
+      "required": ["source_path", "total_files", "dicom_files", "non_dicom_files"],
+      "properties": {
+        "source_path": { "type": "string" },
+        "total_files": { "type": "integer", "minimum": 0 },
+        "dicom_files": { "type": "integer", "minimum": 0 },
+        "non_dicom_files": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "output_summary": {
+      "type": "object",
+      "required": ["output_path", "files_written", "dicom_written", "non_dicom_copied"],
+      "properties": {
+        "output_path": { "type": ["string", "null"] },
+        "files_written": { "type": "integer", "minimum": 0 },
+        "dicom_written": { "type": "integer", "minimum": 0 },
+        "non_dicom_copied": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "action_counts": {
+      "type": "object",
+      "required": ["keep", "remove", "empty", "replace"],
+      "properties": {
+        "keep": { "type": "integer", "minimum": 0 },
+        "remove": { "type": "integer", "minimum": 0 },
+        "empty": { "type": "integer", "minimum": 0 },
+        "replace": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "rule_counts": {
+      "type": "object",
+      "required": ["tag", "vr", "default_private", "default_unknown_public", "default_keep"],
+      "properties": {
+        "tag": { "type": "integer", "minimum": 0 },
+        "vr": { "type": "integer", "minimum": 0 },
+        "default_private": { "type": "integer", "minimum": 0 },
+        "default_unknown_public": { "type": "integer", "minimum": 0 },
+        "default_keep": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "safety_checks": {
+      "type": "object",
+      "required": [
+        "source_exists",
+        "source_is_directory",
+        "output_not_source",
+        "output_not_inside_source",
+        "output_is_new_or_explicit_override",
+        "fail_closed"
+      ],
+      "properties": {
+        "source_exists": { "type": "boolean" },
+        "source_is_directory": { "type": "boolean" },
+        "output_not_source": { "type": "boolean" },
+        "output_not_inside_source": { "type": "boolean" },
+        "output_is_new_or_explicit_override": { "type": "boolean" },
+        "fail_closed": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "decision_trace": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "selector", "vr", "action", "rule_source"],
+        "properties": {
+          "file": { "type": "string" },
+          "selector": { "type": "string" },
+          "keyword": { "type": ["string", "null"] },
+          "vr": { "type": "string" },
+          "action": { "type": "string" },
+          "rule_source": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

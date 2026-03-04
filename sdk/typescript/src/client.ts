@@ -4,7 +4,15 @@ import { createInterface } from "node:readline";
 import { throwMappedError } from "./errors";
 import {
   ApiError,
+  RtAnonymizeTemplateGetInput,
+  RtAnonymizeTemplateGetResponse,
+  RtAnonymizeTemplateResetInput,
+  RtAnonymizeTemplateResetResponse,
+  RtAnonymizeTemplateUpdateInput,
+  RtAnonymizeTemplateUpdateResponse,
   DvhMetricSpec,
+  RtAnonymizeMetadataInput,
+  RtAnonymizeMetadataResponse,
   RtDvhMetricsResponse,
   RtDvhResponse,
   RtInspectResponse,
@@ -85,6 +93,32 @@ export class AitriumRadiotherapyClient {
   }): Promise<RtDvhMetricsResponse> {
     const payload = await this.callTool("rt_dvh_metrics", input);
     return payload as unknown as RtDvhMetricsResponse;
+  }
+
+  async anonymizeMetadata(input: RtAnonymizeMetadataInput): Promise<RtAnonymizeMetadataResponse> {
+    const payload = await this.callTool("rt_anonymize_metadata", input);
+    return payload as unknown as RtAnonymizeMetadataResponse;
+  }
+
+  async getAnonymizeTemplate(
+    input: RtAnonymizeTemplateGetInput = {}
+  ): Promise<RtAnonymizeTemplateGetResponse> {
+    const payload = await this.callTool("rt_anonymize_template_get", input);
+    return payload as unknown as RtAnonymizeTemplateGetResponse;
+  }
+
+  async updateAnonymizeTemplate(
+    input: RtAnonymizeTemplateUpdateInput = {}
+  ): Promise<RtAnonymizeTemplateUpdateResponse> {
+    const payload = await this.callTool("rt_anonymize_template_update", input);
+    return payload as unknown as RtAnonymizeTemplateUpdateResponse;
+  }
+
+  async resetAnonymizeTemplate(
+    input: RtAnonymizeTemplateResetInput = {}
+  ): Promise<RtAnonymizeTemplateResetResponse> {
+    const payload = await this.callTool("rt_anonymize_template_reset", input);
+    return payload as unknown as RtAnonymizeTemplateResetResponse;
   }
 
   private async callTool(

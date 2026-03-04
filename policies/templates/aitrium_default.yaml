@@ -1,0 +1,319 @@
+{
+  "defaults": {
+    "private_tag_default": "remove",
+    "unknown_public_default": "keep"
+  },
+  "tag_rules": {
+    "00020027": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ADDRESS"
+      }
+    },
+    "00100021": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "NEWLEAF"
+      }
+    },
+    "00080081": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ADDRESS"
+      }
+    },
+    "00020028": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ADDRESS"
+      }
+    },
+    "00402017": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00401001": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00321060": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00401002": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00400007": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00400254": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00400255": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00401060": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00189937": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00321030": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00402001": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "3010005c": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00181030": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "0008103e": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00081030": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00080090": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00080092": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ADDRESS"
+      }
+    },
+    "00401102": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ADDRESS"
+      }
+    },
+    "00080080": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00081040": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00101040": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ADDRESS"
+      }
+    },
+    "00081010": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "ANONYMIZED"
+      }
+    },
+    "00101000": {
+      "action": "remove"
+    },
+    "00101002": {
+      "action": "remove"
+    },
+    "00080094": {
+      "action": "remove"
+    },
+    "00101001": {
+      "action": "remove"
+    },
+    "00080050": {
+      "action": "remove"
+    },
+    "00041510": {
+      "action": "keep"
+    },
+    "0004151a": {
+      "action": "keep"
+    },
+    "00081150": {
+      "action": "keep"
+    },
+    "0008001a": {
+      "action": "keep"
+    },
+    "00080016": {
+      "action": "keep"
+    },
+    "0008001b": {
+      "action": "keep"
+    },
+    "7fe00010": {
+      "action": "keep"
+    },
+    "00020002": {
+      "action": "keep"
+    },
+    "30080105": {
+      "action": "replace",
+      "replace": {
+        "mode": "token_map",
+        "token_prefix": "NL",
+        "token_length": 12
+      }
+    },
+    "00100020": {
+      "action": "replace",
+      "replace": {
+        "mode": "token_map",
+        "token_prefix": "NL",
+        "token_length": 12
+      }
+    },
+    "00200010": {
+      "action": "replace",
+      "replace": {
+        "mode": "token_map",
+        "token_prefix": "NL",
+        "token_length": 12
+      }
+    },
+    "00181000": {
+      "action": "replace",
+      "replace": {
+        "mode": "token_map",
+        "token_prefix": "NL",
+        "token_length": 12
+      }
+    },
+    "00160051": {
+      "action": "replace",
+      "replace": {
+        "mode": "token_map",
+        "token_prefix": "NL",
+        "token_length": 12
+      }
+    },
+    "00100030": {
+      "action": "replace",
+      "replace": {
+        "mode": "date_transform",
+        "date_strategy": "keep_year_only"
+      }
+    }
+  },
+  "vr_rules": {
+    "CS": {
+      "action": "keep"
+    },
+    "DA": {
+      "action": "replace",
+      "replace": {
+        "mode": "date_transform",
+        "date_strategy": "keep_year_only"
+      }
+    },
+    "DT": {
+      "action": "replace",
+      "replace": {
+        "mode": "date_transform",
+        "date_strategy": "keep_year_only"
+      }
+    },
+    "LT": {
+      "action": "empty"
+    },
+    "PN": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "PNANONYMIZED"
+      }
+    },
+    "TM": {
+      "action": "replace",
+      "replace": {
+        "mode": "literal",
+        "literal": "000000.000000"
+      }
+    },
+    "UI": {
+      "action": "replace",
+      "replace": {
+        "mode": "uid_map",
+        "uid_root": "2.25"
+      }
+    }
+  }
+}

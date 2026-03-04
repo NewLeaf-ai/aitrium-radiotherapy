@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/anonymization_policy.schema.json",
+  "title": "Anonymization policy",
+  "type": "object",
+  "properties": {
+    "tag_rules": {
+      "type": "object",
+      "description": "Tag-level rules keyed by '(gggg,eeee)', 'gggg,eeee', or keyword.",
+      "additionalProperties": { "$ref": "#/$defs/rule" }
+    },
+    "vr_rules": {
+      "type": "object",
+      "description": "VR-level fallback rules keyed by DICOM VR (e.g., PN, LO, DA).",
+      "additionalProperties": { "$ref": "#/$defs/rule" }
+    },
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "private_tag_default": { "$ref": "#/$defs/action" },
+        "unknown_public_default": { "$ref": "#/$defs/action" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "action": {
+      "type": "string",
+      "enum": ["keep", "remove", "empty", "replace"]
+    },
+    "replace_mode": {
+      "type": "string",
+      "enum": ["literal", "uid_map", "date_transform", "token_map"]
+    },
+    "date_strategy": {
+      "type": "string",
+      "enum": ["keep_year_only", "fixed_shift_dataset", "fixed_value"]
+    },
+    "replace": {
+      "type": "object",
+      "properties": {
+        "mode": { "$ref": "#/$defs/replace_mode" },
+        "literal": { "type": "string" },
+        "uid_root": { "type": "string" },
+        "date_strategy": { "$ref": "#/$defs/date_strategy" },
+        "fixed_value": { "type": "string" },
+        "days_shift": { "type": "integer" },
+        "token_prefix": { "type": "string" },
+        "token_length": { "type": "integer", "minimum": 4, "maximum": 64 }
+      },
+      "additionalProperties": false
+    },
+    "rule": {
+      "type": "object",
+      "required": ["action"],
+      "properties": {
+        "action": { "$ref": "#/$defs/action" },
+        "replace": { "$ref": "#/$defs/replace" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -2,10 +2,14 @@
 
 `aitrium-radiotherapy` is a local MCP server for radiotherapy DICOM analysis.
 
-It exposes three tools:
+It exposes seven tools:
 - `rt_inspect`
 - `rt_dvh`
 - `rt_dvh_metrics`
+- `rt_anonymize_metadata`
+- `rt_anonymize_template_get`
+- `rt_anonymize_template_update`
+- `rt_anonymize_template_reset`
 
 ## Important Safety Notice
 
@@ -146,6 +150,10 @@ Then ask your agent to call:
 - `rt_inspect` for dataset discovery
 - `rt_dvh_metrics` for compact rule-oriented metrics
 - `rt_dvh` when full DVH curves are needed
+- `rt_anonymize_metadata` for policy-driven metadata de-identification
+- `rt_anonymize_template_get` to inspect effective runtime template policy
+- `rt_anonymize_template_update` to persist template changes to a single editable copy
+- `rt_anonymize_template_reset` to remove custom copy and return to built-in fallback
 
 ## Use Case B: Direct Local CLI Workflow (No Codex/Claude)
 
@@ -184,19 +192,45 @@ Alternative metrics input forms:
 
 All command outputs are JSON.
 
+### 4) Metadata anonymization (dry-run or write)
+
+```bash
+aitrium-radiotherapy-server anonymize-metadata \
+  --source /path/to/source \
+  --template aitrium_default
+```
+
+```bash
+aitrium-radiotherapy-server anonymize-metadata \
+  --source /path/to/source \
+  --output /path/to/anonymized-copy \
+  --template strict_phi_safe \
+  --write
+```
+
+Write mode emits DICOM files as `MODALITY.SOPInstanceUID.dcm` using anonymized SOP Instance UIDs.
+
 ## Practical Use Cases
 
 - Local DICOM triage: inspect structures, plans, and dose objects in a dataset.
 - Agent-assisted RTQA prototyping: compute DVH metrics for rule evaluation workflows.
 - Batch research analysis: run repeatable metric extraction across anonymized RT datasets.
+- Policy-driven metadata sanitization: create copy-on-write anonymized datasets with audit-style reports.
 
 ## Tool Summary
 
 - `rt_inspect`: scan DICOM RT study metadata from a folder path.
 - `rt_dvh`: compute DVH outputs from explicit `RTSTRUCT` + `RTDOSE` paths.
 - `rt_dvh_metrics`: compute compact metrics (for example `D@V`, `V@D`, selected stats).
+- `rt_anonymize_metadata`: policy-based DICOM metadata anonymization (no pixel transformations).
+- `rt_anonymize_template_get`: read effective runtime template alias (`aitrium_template`).
+- `rt_anonymize_template_update`: persist runtime template edits (single custom copy).
+- `rt_anonymize_template_reset`: delete runtime custom copy and use built-in fallback.
 
 Canonical schemas are in `schemas/`.
+
+See [`docs/ANONYMIZATION.md`](docs/ANONYMIZATION.md) for policy details and templates.
+Template options include `strict_phi_safe`, `research_balanced`, `minimal_explicit`, `aitrium_default`, and runtime alias `aitrium_template`.
 
 ## Coming Soon
 

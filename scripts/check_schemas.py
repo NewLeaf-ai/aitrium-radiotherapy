@@ -8,12 +8,21 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = [
     ROOT / "schemas" / "error.schema.json",
+    ROOT / "schemas" / "anonymization_policy.schema.json",
     ROOT / "schemas" / "rt_inspect.input.schema.json",
     ROOT / "schemas" / "rt_inspect.output.schema.json",
     ROOT / "schemas" / "rt_dvh.input.schema.json",
     ROOT / "schemas" / "rt_dvh.output.schema.json",
     ROOT / "schemas" / "rt_dvh_metrics.input.schema.json",
     ROOT / "schemas" / "rt_dvh_metrics.output.schema.json",
+    ROOT / "schemas" / "rt_anonymize_metadata.input.schema.json",
+    ROOT / "schemas" / "rt_anonymize_metadata.output.schema.json",
+    ROOT / "schemas" / "rt_anonymize_template_get.input.schema.json",
+    ROOT / "schemas" / "rt_anonymize_template_get.output.schema.json",
+    ROOT / "schemas" / "rt_anonymize_template_update.input.schema.json",
+    ROOT / "schemas" / "rt_anonymize_template_update.output.schema.json",
+    ROOT / "schemas" / "rt_anonymize_template_reset.input.schema.json",
+    ROOT / "schemas" / "rt_anonymize_template_reset.output.schema.json",
 ]
 
 

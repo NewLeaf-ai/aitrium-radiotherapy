@@ -176,3 +176,135 @@ export interface RtDvhMetricsResponse {
   structures: RoiMetricResult[];
   warnings?: string[];
 }
+
+export interface AnonymizePolicy {
+  tag_rules?: Record<string, unknown>;
+  vr_rules?: Record<string, unknown>;
+  defaults?: {
+    private_tag_default?: "keep" | "remove" | "empty" | "replace";
+    unknown_public_default?: "keep" | "remove" | "empty" | "replace";
+  };
+}
+
+export interface RtAnonymizeMetadataInput {
+  source_path: string;
+  output_path?: string;
+  policy?: AnonymizePolicy;
+  policy_path?: string;
+  template?:
+    | "strict_phi_safe"
+    | "research_balanced"
+    | "minimal_explicit"
+    | "aitrium_default"
+    | "aitrium_template";
+  policy_overrides?: Record<string, unknown>;
+  dry_run?: boolean;
+  allow_existing_output?: boolean;
+  report_path?: string;
+  max_workers?: number;
+  fail_on_error?: boolean;
+  include_trace?: boolean;
+  deterministic_uid_secret?: string;
+}
+
+export interface AnonymizeSourceSummary {
+  source_path: string;
+  total_files: number;
+  dicom_files: number;
+  non_dicom_files: number;
+}
+
+export interface AnonymizeOutputSummary {
+  output_path?: string | null;
+  files_written: number;
+  dicom_written: number;
+  non_dicom_copied: number;
+}
+
+export interface AnonymizeActionCounts {
+  keep: number;
+  remove: number;
+  empty: number;
+  replace: number;
+}
+
+export interface AnonymizeRuleCounts {
+  tag: number;
+  vr: number;
+  default_private: number;
+  default_unknown_public: number;
+  default_keep: number;
+}
+
+export interface AnonymizeSafetyChecks {
+  source_exists: boolean;
+  source_is_directory: boolean;
+  output_not_source: boolean;
+  output_not_inside_source: boolean;
+  output_is_new_or_explicit_override: boolean;
+  fail_closed: boolean;
+}
+
+export interface AnonymizeDecisionTrace {
+  file: string;
+  selector: string;
+  keyword?: string | null;
+  vr: string;
+  action: string;
+  rule_source: string;
+}
+
+export interface RtAnonymizeMetadataResponse {
+  schema_version: string;
+  mode: "dry_run" | "write";
+  source_summary: AnonymizeSourceSummary;
+  output_summary: AnonymizeOutputSummary;
+  action_counts: AnonymizeActionCounts;
+  rule_counts: AnonymizeRuleCounts;
+  warnings?: string[];
+  errors?: string[];
+  safety_checks: AnonymizeSafetyChecks;
+  duration_ms: number;
+  decision_trace?: AnonymizeDecisionTrace[];
+}
+
+export interface RtAnonymizeTemplateGetInput {
+  template?: "aitrium_template";
+}
+
+export interface RtAnonymizeTemplateUpdateInput {
+  template?: "aitrium_template";
+  policy?: AnonymizePolicy;
+  policy_overrides?: Record<string, unknown>;
+}
+
+export interface RtAnonymizeTemplateResetInput {
+  template?: "aitrium_template";
+}
+
+export interface RtAnonymizeTemplateGetResponse {
+  schema_version: string;
+  template_name: "aitrium_template";
+  template_path: string;
+  source: "runtime" | "built_in_fallback";
+  policy: AnonymizePolicy;
+  warnings?: string[];
+}
+
+export interface RtAnonymizeTemplateUpdateResponse {
+  schema_version: string;
+  template_name: "aitrium_template";
+  template_path: string;
+  source: "runtime";
+  policy: AnonymizePolicy;
+  warnings?: string[];
+}
+
+export interface RtAnonymizeTemplateResetResponse {
+  schema_version: string;
+  template_name: "aitrium_template";
+  template_path: string;
+  deleted: boolean;
+  source_after_reset: "built_in_fallback";
+  warnings?: string[];
+}

@@ -1,0 +1,42 @@
+defaults:
+  private_tag_default: remove
+  unknown_public_default: keep
+
+tag_rules:
+  PatientName:
+    action: empty
+  PatientID:
+    action: replace
+    replace:
+      mode: literal
+      literal: "SUBJECT"
+  PatientBirthDate:
+    action: replace
+    replace:
+      mode: date_transform
+      date_strategy: keep_year_only
+  StudyInstanceUID:
+    action: replace
+    replace:
+      mode: uid_map
+      uid_root: "2.25"
+  SeriesInstanceUID:
+    action: replace
+    replace:
+      mode: uid_map
+      uid_root: "2.25"
+  SOPInstanceUID:
+    action: replace
+    replace:
+      mode: uid_map
+      uid_root: "2.25"
+
+vr_rules:
+  PN:
+    action: empty
+  DA:
+    action: replace
+    replace:
+      mode: date_transform
+      date_strategy: fixed_shift_dataset
+      days_shift: 45

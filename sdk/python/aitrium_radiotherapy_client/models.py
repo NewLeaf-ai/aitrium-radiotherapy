@@ -187,3 +187,111 @@ class ToolSpec(BaseModel):
     description: str
     input_schema: dict[str, Any]
     output_schema: dict[str, Any]
+
+
+class AnonymizeSourceSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_path: str
+    total_files: int
+    dicom_files: int
+    non_dicom_files: int
+
+
+class AnonymizeOutputSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    output_path: str | None = None
+    files_written: int
+    dicom_written: int
+    non_dicom_copied: int
+
+
+class AnonymizeActionCounts(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    keep: int
+    remove: int
+    empty: int
+    replace: int
+
+
+class AnonymizeRuleCounts(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    tag: int
+    vr: int
+    default_private: int
+    default_unknown_public: int
+    default_keep: int
+
+
+class AnonymizeSafetyChecks(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_exists: bool
+    source_is_directory: bool
+    output_not_source: bool
+    output_not_inside_source: bool
+    output_is_new_or_explicit_override: bool
+    fail_closed: bool
+
+
+class AnonymizeDecisionTrace(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    file: str
+    selector: str
+    keyword: str | None = None
+    vr: str
+    action: str
+    rule_source: str
+
+
+class RtAnonymizeMetadataResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: str
+    mode: Literal["dry_run", "write"]
+    source_summary: AnonymizeSourceSummary
+    output_summary: AnonymizeOutputSummary
+    action_counts: AnonymizeActionCounts
+    rule_counts: AnonymizeRuleCounts
+    warnings: list[str] = []
+    errors: list[str] = []
+    safety_checks: AnonymizeSafetyChecks
+    duration_ms: int
+    decision_trace: list[AnonymizeDecisionTrace] = []
+
+
+class RtAnonymizeTemplateGetResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: str
+    template_name: Literal["aitrium_template"]
+    template_path: str
+    source: Literal["runtime", "built_in_fallback"]
+    policy: dict[str, Any]
+    warnings: list[str] = []
+
+
+class RtAnonymizeTemplateUpdateResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: str
+    template_name: Literal["aitrium_template"]
+    template_path: str
+    source: Literal["runtime"]
+    policy: dict[str, Any]
+    warnings: list[str] = []
+
+
+class RtAnonymizeTemplateResetResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: str
+    template_name: Literal["aitrium_template"]
+    template_path: str
+    deleted: bool
+    source_after_reset: Literal["built_in_fallback"]
+    warnings: list[str] = []

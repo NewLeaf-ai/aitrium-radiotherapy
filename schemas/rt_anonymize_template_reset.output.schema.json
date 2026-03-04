@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/rt_anonymize_template_reset.output.schema.json",
+  "title": "rt_anonymize_template_reset output",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "template_name",
+    "template_path",
+    "deleted",
+    "source_after_reset"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "template_name": {
+      "type": "string",
+      "const": "aitrium_template"
+    },
+    "template_path": {
+      "type": "string"
+    },
+    "deleted": {
+      "type": "boolean"
+    },
+    "source_after_reset": {
+      "type": "string",
+      "enum": ["built_in_fallback"]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

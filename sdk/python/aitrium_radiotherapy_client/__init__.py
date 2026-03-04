@@ -9,7 +9,15 @@ from aitrium_radiotherapy_client.exceptions import (
     AitriumRadiotherapyError,
     TransportError,
 )
-from aitrium_radiotherapy_client.models import RtDvhMetricsResponse, RtDvhResponse, RtInspectResponse
+from aitrium_radiotherapy_client.models import (
+    RtAnonymizeMetadataResponse,
+    RtAnonymizeTemplateGetResponse,
+    RtAnonymizeTemplateResetResponse,
+    RtAnonymizeTemplateUpdateResponse,
+    RtDvhMetricsResponse,
+    RtDvhResponse,
+    RtInspectResponse,
+)
 
 __all__ = [
     "AitriumRadiotherapyClient",
@@ -24,4 +32,8 @@ __all__ = [
     "RtInspectResponse",
     "RtDvhResponse",
     "RtDvhMetricsResponse",
+    "RtAnonymizeMetadataResponse",
+    "RtAnonymizeTemplateGetResponse",
+    "RtAnonymizeTemplateUpdateResponse",
+    "RtAnonymizeTemplateResetResponse",
 ]

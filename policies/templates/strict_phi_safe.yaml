@@ -1,0 +1,75 @@
+defaults:
+  private_tag_default: remove
+  unknown_public_default: keep
+
+tag_rules:
+  PatientName:
+    action: empty
+  PatientID:
+    action: empty
+  PatientBirthDate:
+    action: empty
+  PatientSex:
+    action: keep
+  AccessionNumber:
+    action: empty
+  ReferringPhysicianName:
+    action: empty
+  InstitutionName:
+    action: empty
+  OperatorsName:
+    action: empty
+  StudyDescription:
+    action: replace
+    replace:
+      mode: literal
+      literal: "REDACTED_STUDY"
+  SeriesDescription:
+    action: replace
+    replace:
+      mode: literal
+      literal: "REDACTED_SERIES"
+  StudyInstanceUID:
+    action: replace
+    replace:
+      mode: uid_map
+      uid_root: "2.25"
+  SeriesInstanceUID:
+    action: replace
+    replace:
+      mode: uid_map
+      uid_root: "2.25"
+  SOPInstanceUID:
+    action: replace
+    replace:
+      mode: uid_map
+      uid_root: "2.25"
+  FrameOfReferenceUID:
+    action: replace
+    replace:
+      mode: uid_map
+      uid_root: "2.25"
+
+vr_rules:
+  PN:
+    action: empty
+  LO:
+    action: keep
+  SH:
+    action: keep
+  LT:
+    action: keep
+  ST:
+    action: keep
+  UT:
+    action: keep
+  DA:
+    action: replace
+    replace:
+      mode: date_transform
+      date_strategy: keep_year_only
+  DT:
+    action: replace
+    replace:
+      mode: date_transform
+      date_strategy: keep_year_only

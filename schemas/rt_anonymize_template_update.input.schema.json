@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/rt_anonymize_template_update.input.schema.json",
+  "title": "rt_anonymize_template_update input",
+  "type": "object",
+  "properties": {
+    "template": {
+      "type": "string",
+      "enum": ["aitrium_template"],
+      "default": "aitrium_template"
+    },
+    "policy": {
+      "$ref": "anonymization_policy.schema.json"
+    },
+    "policy_overrides": {
+      "type": "object",
+      "description": "Object merged over base policy before persistence."
+    }
+  },
+  "additionalProperties": false
+}

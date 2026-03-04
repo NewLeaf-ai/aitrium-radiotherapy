@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/rt_anonymize_template_reset.input.schema.json",
+  "title": "rt_anonymize_template_reset input",
+  "type": "object",
+  "properties": {
+    "template": {
+      "type": "string",
+      "enum": ["aitrium_template"],
+      "default": "aitrium_template"
+    }
+  },
+  "additionalProperties": false
+}

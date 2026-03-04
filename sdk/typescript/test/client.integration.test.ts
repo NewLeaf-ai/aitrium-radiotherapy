@@ -35,6 +35,10 @@ describe("AitriumRadiotherapyClient integration", () => {
       expect(names).toContain("rt_inspect");
       expect(names).toContain("rt_dvh");
       expect(names).toContain("rt_dvh_metrics");
+      expect(names).toContain("rt_anonymize_metadata");
+      expect(names).toContain("rt_anonymize_template_get");
+      expect(names).toContain("rt_anonymize_template_update");
+      expect(names).toContain("rt_anonymize_template_reset");
     } finally {
       await client.close();
     }

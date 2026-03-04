@@ -1,0 +1,24 @@
+defaults:
+  private_tag_default: keep
+  unknown_public_default: keep
+
+tag_rules:
+  PatientName:
+    action: empty
+  PatientID:
+    action: empty
+  StudyInstanceUID:
+    action: replace
+    replace:
+      mode: uid_map
+      uid_root: "2.25"
+  SeriesInstanceUID:
+    action: replace
+    replace:
+      mode: uid_map
+      uid_root: "2.25"
+  SOPInstanceUID:
+    action: replace
+    replace:
+      mode: uid_map
+      uid_root: "2.25"

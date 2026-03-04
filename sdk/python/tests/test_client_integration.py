@@ -26,6 +26,10 @@ def test_list_tools(client: AitriumRadiotherapyClient) -> None:
     assert "rt_inspect" in names
     assert "rt_dvh" in names
     assert "rt_dvh_metrics" in names
+    assert "rt_anonymize_metadata" in names
+    assert "rt_anonymize_template_get" in names
+    assert "rt_anonymize_template_update" in names
+    assert "rt_anonymize_template_reset" in names
 
 
 def test_inspect_missing_path_returns_typed_error(client: AitriumRadiotherapyClient) -> None:

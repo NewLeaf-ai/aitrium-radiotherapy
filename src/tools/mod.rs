@@ -1,3 +1,5 @@
+pub mod anonymize;
+pub mod anonymize_template;
 pub mod dvh;
 pub mod inspect;
 
@@ -32,6 +34,30 @@ impl ToolRegistry {
                 input_schema: schema_from_file("../../schemas/rt_dvh_metrics.input.schema.json"),
                 output_schema: schema_from_file("../../schemas/rt_dvh_metrics.output.schema.json"),
             },
+            ToolSpec {
+                name: "rt_anonymize_metadata".to_string(),
+                description: "Apply policy-driven DICOM metadata anonymization (metadata only; no pixel transformation) with dry-run/write modes".to_string(),
+                input_schema: schema_from_file("../../schemas/rt_anonymize_metadata.input.schema.json"),
+                output_schema: schema_from_file("../../schemas/rt_anonymize_metadata.output.schema.json"),
+            },
+            ToolSpec {
+                name: "rt_anonymize_template_get".to_string(),
+                description: "Get effective runtime-editable anonymization template 'aitrium_template' (runtime copy or built-in fallback)".to_string(),
+                input_schema: schema_from_file("../../schemas/rt_anonymize_template_get.input.schema.json"),
+                output_schema: schema_from_file("../../schemas/rt_anonymize_template_get.output.schema.json"),
+            },
+            ToolSpec {
+                name: "rt_anonymize_template_update".to_string(),
+                description: "Create/update runtime-editable anonymization template 'aitrium_template' using full policy or merged overrides".to_string(),
+                input_schema: schema_from_file("../../schemas/rt_anonymize_template_update.input.schema.json"),
+                output_schema: schema_from_file("../../schemas/rt_anonymize_template_update.output.schema.json"),
+            },
+            ToolSpec {
+                name: "rt_anonymize_template_reset".to_string(),
+                description: "Reset runtime-editable anonymization template 'aitrium_template' by deleting custom copy and falling back to built-in default".to_string(),
+                input_schema: schema_from_file("../../schemas/rt_anonymize_template_reset.input.schema.json"),
+                output_schema: schema_from_file("../../schemas/rt_anonymize_template_reset.output.schema.json"),
+            },
         ]
     }
 
@@ -40,6 +66,10 @@ impl ToolRegistry {
             "rt_inspect" => inspect::handle(arguments),
             "rt_dvh" => dvh::handle(arguments),
             "rt_dvh_metrics" => dvh::handle_metrics(arguments),
+            "rt_anonymize_metadata" => anonymize::handle(arguments),
+            "rt_anonymize_template_get" => anonymize_template::handle_get(arguments),
+            "rt_anonymize_template_update" => anonymize_template::handle_update(arguments),
+            "rt_anonymize_template_reset" => anonymize_template::handle_reset(arguments),
             _ => Err(ApiError::new(
                 ErrorCode::InvalidInput,
                 format!("Unknown tool: {name}"),
@@ -68,6 +98,30 @@ fn schema_from_file(path: &str) -> Value {
         }
         "../../schemas/rt_dvh_metrics.output.schema.json" => {
             include_str!("../../schemas/rt_dvh_metrics.output.schema.json")
+        }
+        "../../schemas/rt_anonymize_metadata.input.schema.json" => {
+            include_str!("../../schemas/rt_anonymize_metadata.input.schema.json")
+        }
+        "../../schemas/rt_anonymize_metadata.output.schema.json" => {
+            include_str!("../../schemas/rt_anonymize_metadata.output.schema.json")
+        }
+        "../../schemas/rt_anonymize_template_get.input.schema.json" => {
+            include_str!("../../schemas/rt_anonymize_template_get.input.schema.json")
+        }
+        "../../schemas/rt_anonymize_template_get.output.schema.json" => {
+            include_str!("../../schemas/rt_anonymize_template_get.output.schema.json")
+        }
+        "../../schemas/rt_anonymize_template_update.input.schema.json" => {
+            include_str!("../../schemas/rt_anonymize_template_update.input.schema.json")
+        }
+        "../../schemas/rt_anonymize_template_update.output.schema.json" => {
+            include_str!("../../schemas/rt_anonymize_template_update.output.schema.json")
+        }
+        "../../schemas/rt_anonymize_template_reset.input.schema.json" => {
+            include_str!("../../schemas/rt_anonymize_template_reset.input.schema.json")
+        }
+        "../../schemas/rt_anonymize_template_reset.output.schema.json" => {
+            include_str!("../../schemas/rt_anonymize_template_reset.output.schema.json")
         }
         _ => "{}",
     };

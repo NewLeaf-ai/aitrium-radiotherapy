@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/rt_anonymize_metadata.input.schema.json",
+  "title": "rt_anonymize_metadata input",
+  "type": "object",
+  "required": ["source_path"],
+  "properties": {
+    "source_path": {
+      "type": "string",
+      "description": "Path to the source directory containing DICOM and non-DICOM files."
+    },
+    "output_path": {
+      "type": "string",
+      "description": "Output directory for anonymized copy. Required when dry_run=false."
+    },
+    "policy": {
+      "$ref": "anonymization_policy.schema.json"
+    },
+    "policy_path": {
+      "type": "string",
+      "description": "Optional JSON/YAML policy file path."
+    },
+    "template": {
+      "type": "string",
+      "enum": [
+        "strict_phi_safe",
+        "research_balanced",
+        "minimal_explicit",
+        "aitrium_default",
+        "aitrium_template"
+      ]
+    },
+    "policy_overrides": {
+      "type": "object",
+      "description": "Object merged over base template/policy before execution."
+    },
+    "dry_run": {
+      "type": "boolean",
+      "default": true
+    },
+    "allow_existing_output": {
+      "type": "boolean",
+      "default": false
+    },
+    "report_path": {
+      "type": "string"
+    },
+    "max_workers": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "fail_on_error": {
+      "type": "boolean",
+      "default": true
+    },
+    "include_trace": {
+      "type": "boolean",
+      "default": false
+    },
+    "deterministic_uid_secret": {
+      "type": "string",
+      "description": "Optional secret enabling repeatable UID mapping across runs."
+    }
+  },
+  "additionalProperties": false
+}
