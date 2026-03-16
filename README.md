@@ -2,10 +2,11 @@
 
 `aitrium-radiotherapy` is a local MCP server for radiotherapy DICOM analysis.
 
-It exposes seven tools:
+It exposes eight tools:
 - `rt_inspect`
 - `rt_dvh`
 - `rt_dvh_metrics`
+- `rt_margin`
 - `rt_anonymize_metadata`
 - `rt_anonymize_template_get`
 - `rt_anonymize_template_update`
@@ -150,6 +151,7 @@ Then ask your agent to call:
 - `rt_inspect` for dataset discovery
 - `rt_dvh_metrics` for compact rule-oriented metrics
 - `rt_dvh` when full DVH curves are needed
+- `rt_margin` for directional margin analysis between two structures
 - `rt_anonymize_metadata` for policy-driven metadata de-identification
 - `rt_anonymize_template_get` to inspect effective runtime template policy
 - `rt_anonymize_template_update` to persist template changes to a single editable copy
@@ -192,7 +194,36 @@ Alternative metrics input forms:
 
 All command outputs are JSON.
 
-### 4) Metadata anonymization (dry-run or write)
+### 4) Compute directional margin between structures
+
+```bash
+aitrium-radiotherapy-server margin \
+  --rtstruct /path/to/RTSTRUCT.dcm \
+  --from CTV_70 \
+  --to PTV_70 \
+  --direction posterior \
+  --coverage-thresholds 3,5,7
+```
+
+Margin parameter semantics:
+- `--direction`: anatomical direction filter applied to source (`--from`) boundary samples before clearance extraction. Valid values:
+  - `uniform`: no directional filtering.
+  - `lateral`: conservative lateral clearance, computed as `min(left, right)`.
+  - `posterior`: toward patient back.
+  - `anterior`: toward patient front.
+  - `left`: toward patient left side.
+  - `right`: toward patient right side.
+  - `superior`: toward patient head.
+  - `inferior`: toward patient feet.
+- `--coverage-thresholds 3,5,7`: evaluates coverage at 3 mm, 5 mm, and 7 mm. For a threshold `t`, coverage is `% of source boundary samples with clearance >= t`.
+- Clearance sign convention: positive means the source is inside the target with margin; negative means the source protrudes outside the target.
+- `--summary-percentile 5`: makes `summary_mm` the 5th percentile clearance, which is the default policy-facing metric.
+- `--direction-cone`: cone half-angle in degrees for directional filtering (`45` means a 45-degree cone around the selected direction).
+- `--xy-resolution`: synthetic in-plane voxel size in mm for the RTSTRUCT-only clearance engine.
+- `--z-resolution`: optional synthetic slice spacing in mm. Omit it to let the engine choose automatically.
+- `--max-voxels`: cap for the synthetic grid size; the engine auto-coarsens if it would exceed this limit.
+
+### 5) Metadata anonymization (dry-run or write)
 
 ```bash
 aitrium-radiotherapy-server anonymize-metadata \
@@ -210,6 +241,16 @@ aitrium-radiotherapy-server anonymize-metadata \
 
 Write mode emits DICOM files as `MODALITY.SOPInstanceUID.dcm` using anonymized SOP Instance UIDs.
 
+### Parameter Semantics Quick Reference
+
+- `dvh --interpolation --z-segments N`: enables additional contour-plane sampling between original z planes (`N=0` means none).
+- `dvh --max-points N` and `--precision N`: output-size controls only (they downsample/round returned DVH arrays; they do not change core DVH stats).
+- `dvh-metrics --metric 'd95=dav:95'`: `dav` means dose-at-volume-percent.
+- `dvh-metrics --metric 'v20=vad:20:percent'`: `vad` means volume-at-dose; final token is output unit (`percent` or `cc`).
+- `margin --direction <value>`: valid values are `uniform`, `lateral`, `posterior`, `anterior`, `left`, `right`, `superior`, `inferior`.
+- `margin --coverage-thresholds 3,5,7`: computes coverage at 3 mm, 5 mm, and 7 mm thresholds using `% boundary samples with clearance >= threshold`.
+- `anonymize-metadata --write`: enables copy-on-write output mode; without `--write`, execution is dry-run only.
+
 ## Practical Use Cases
 
 - Local DICOM triage: inspect structures, plans, and dose objects in a dataset.
@@ -222,6 +263,7 @@ Write mode emits DICOM files as `MODALITY.SOPInstanceUID.dcm` using anonymized S
 - `rt_inspect`: scan DICOM RT study metadata from a folder path.
 - `rt_dvh`: compute DVH outputs from explicit `RTSTRUCT` + `RTDOSE` paths.
 - `rt_dvh_metrics`: compute compact metrics (for example `D@V`, `V@D`, selected stats).
+- `rt_margin`: compute directional A -> B margin statistics with coverage thresholds.
 - `rt_anonymize_metadata`: policy-based DICOM metadata anonymization (no pixel transformations).
 - `rt_anonymize_template_get`: read effective runtime template alias (`aitrium_template`).
 - `rt_anonymize_template_update`: persist runtime template edits (single custom copy).

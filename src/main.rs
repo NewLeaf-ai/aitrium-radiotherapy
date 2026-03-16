@@ -53,6 +53,7 @@ fn main() -> anyhow::Result<()> {
         "inspect" => run_cli_inspect(&registry, &args[1..]),
         "dvh" => run_cli_dvh(&registry, &args[1..]),
         "dvh-metrics" | "dvh_metrics" => run_cli_dvh_metrics(&registry, &args[1..]),
+        "margin" => run_cli_margin(&registry, &args[1..]),
         "anonymize-metadata" | "anonymize_metadata" => {
             run_cli_anonymize_metadata(&registry, &args[1..])
         }
@@ -83,6 +84,7 @@ fn print_help() {
     println!(
         "  aitrium-radiotherapy-server dvh-metrics --rtstruct <RS.dcm> --rtdose <RD.dcm> [options]"
     );
+    println!("  aitrium-radiotherapy-server margin --rtstruct <RS.dcm> --from <name> --to <name> [options]");
     println!("  aitrium-radiotherapy-server anonymize-metadata --source <dir> [options]");
     println!();
     println!("dvh options:");
@@ -111,6 +113,31 @@ fn print_help() {
     println!("  --metric 'd95=dav:95'");
     println!("  --metric 'v20=vad:20:percent'");
     println!("  --metric 'mean=stat:mean_gy'");
+    println!();
+    println!("margin options:");
+    println!("  --from <name>                  Source structure name (A in A -> B)");
+    println!("  --to <name>                    Target structure name (B in A -> B)");
+    println!(
+        "  --direction <name>             Clearance direction: uniform|lateral|posterior|anterior|left|right|superior|inferior"
+    );
+    println!(
+        "  --interpolation [true|false]   Interpolate contour planes between original z slices before RTSTRUCT voxelization (default false)"
+    );
+    println!("  --z-segments <N>               New planes inserted between neighboring contour slices when interpolation=true");
+    println!(
+        "  --coverage-thresholds <csv>    Comma list of clearance thresholds in mm (e.g. 3,5,7)"
+    );
+    println!(
+        "  --coverage-threshold <value>   Repeatable single clearance threshold in mm; can be used instead of --coverage-thresholds"
+    );
+    println!("  --summary-percentile <p>       Primary reported percentile in [0,100]; default 5");
+    println!("  --direction-cone <deg>         Half-angle of direction cone in degrees (0,180], default 45");
+    println!("  --xy-resolution <mm>           Synthetic in-plane voxel size for RTSTRUCT-only clearance (default 1.0)");
+    println!("  --z-resolution <mm>            Synthetic slice spacing for RTSTRUCT-only clearance; omit for auto");
+    println!("  --max-voxels <N>               Cap synthetic grid size; engine auto-coarsens if exceeded (default 5000000)");
+    println!("  clearance sign convention:     positive=source is inside target with margin, negative=source protrudes outside target");
+    println!("  coverage semantics:            For threshold t, coverage(t) = % of boundary samples with clearance >= t");
+    println!("  direction values:              uniform(all directions), lateral(min(left,right)), posterior(back), anterior(front), left, right, superior(head), inferior(feet)");
     println!();
     println!("anonymize-metadata options:");
     println!("  --source <dir>                  Source directory (recursive)");
@@ -226,6 +253,24 @@ impl CliArgs {
             None => Ok(None),
         }
     }
+
+    fn parse_usize(&self, name: &str) -> anyhow::Result<Option<usize>> {
+        match self.value(name) {
+            Some(raw) => Ok(Some(raw.parse::<usize>().with_context(|| {
+                format!("Invalid integer value for --{name}: '{raw}'")
+            })?)),
+            None => Ok(None),
+        }
+    }
+
+    fn parse_f64(&self, name: &str) -> anyhow::Result<Option<f64>> {
+        match self.value(name) {
+            Some(raw) => Ok(Some(raw.parse::<f64>().with_context(|| {
+                format!("Invalid number value for --{name}: '{raw}'")
+            })?)),
+            None => Ok(None),
+        }
+    }
 }
 
 fn parse_bool_literal(input: &str) -> anyhow::Result<bool> {
@@ -256,6 +301,47 @@ fn collect_structures(args: &CliArgs) -> Vec<String> {
     }
 
     output
+}
+
+fn collect_coverage_thresholds(args: &CliArgs) -> anyhow::Result<Vec<f64>> {
+    let mut output = Vec::new();
+
+    for value in args.values("coverage-threshold") {
+        output.push(value.parse::<f64>().with_context(|| {
+            format!("Invalid number value for --coverage-threshold: '{value}'")
+        })?);
+    }
+
+    if let Some(csv) = args.value("coverage-thresholds") {
+        for value in csv
+            .split(',')
+            .map(str::trim)
+            .filter(|item| !item.is_empty())
+        {
+            output.push(value.parse::<f64>().with_context(|| {
+                format!("Invalid number value in --coverage-thresholds: '{value}'")
+            })?);
+        }
+    }
+
+    Ok(output)
+}
+
+fn parse_margin_direction(raw: &str) -> anyhow::Result<&'static str> {
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "uniform" => Ok("uniform"),
+        "lateral" => Ok("lateral"),
+        "posterior" => Ok("posterior"),
+        "anterior" => Ok("anterior"),
+        "left" => Ok("left"),
+        "right" => Ok("right"),
+        "superior" => Ok("superior"),
+        "inferior" => Ok("inferior"),
+        other => bail!(
+            "Invalid --direction '{}'; use one of: uniform, lateral, posterior, anterior, left, right, superior, inferior",
+            other
+        ),
+    }
 }
 
 fn run_cli_inspect(registry: &ToolRegistry, tokens: &[String]) -> anyhow::Result<()> {
@@ -355,6 +441,75 @@ fn run_cli_dvh_metrics(registry: &ToolRegistry, tokens: &[String]) -> anyhow::Re
     }
 
     execute_cli_tool(registry, "rt_dvh_metrics", Value::Object(payload))
+}
+
+fn run_cli_margin(registry: &ToolRegistry, tokens: &[String]) -> anyhow::Result<()> {
+    let args = CliArgs::parse(tokens)?;
+
+    let rtstruct_path = args
+        .value("rtstruct")
+        .map(ToOwned::to_owned)
+        .or_else(|| args.positionals.first().cloned())
+        .context("margin requires --rtstruct <path> (or first positional)")?;
+
+    if args.positionals.len() > 1 {
+        bail!("Too many positional arguments for margin");
+    }
+
+    let from_structure = args
+        .value("from")
+        .map(ToOwned::to_owned)
+        .context("margin requires --from <name>")?;
+    let to_structure = args
+        .value("to")
+        .map(ToOwned::to_owned)
+        .context("margin requires --to <name>")?;
+
+    let direction = parse_margin_direction(args.value("direction").unwrap_or("uniform"))?;
+    let interpolation = args.parse_bool("interpolation", false)?;
+    let z_segments = args.parse_u32("z-segments")?.unwrap_or(0);
+    let summary_percentile = args.parse_f64("summary-percentile")?;
+    let direction_cone = args.parse_f64("direction-cone")?.unwrap_or(45.0);
+    let xy_resolution_mm = args.parse_f64("xy-resolution")?;
+    let z_resolution_mm = args.parse_f64("z-resolution")?;
+    let max_voxels = args.parse_usize("max-voxels")?;
+    let coverage_thresholds = collect_coverage_thresholds(&args)?;
+
+    let mut payload = Map::new();
+    payload.insert("rtstruct_path".to_string(), Value::String(rtstruct_path));
+    payload.insert("from_structure".to_string(), Value::String(from_structure));
+    payload.insert("to_structure".to_string(), Value::String(to_structure));
+    payload.insert(
+        "direction".to_string(),
+        Value::String(direction.to_string()),
+    );
+    payload.insert("interpolation".to_string(), Value::Bool(interpolation));
+    payload.insert("z_segments".to_string(), Value::from(z_segments));
+    payload.insert(
+        "direction_cone_degrees".to_string(),
+        Value::from(direction_cone),
+    );
+
+    if !coverage_thresholds.is_empty() {
+        payload.insert(
+            "coverage_thresholds_mm".to_string(),
+            Value::Array(coverage_thresholds.into_iter().map(Value::from).collect()),
+        );
+    }
+    if let Some(value) = summary_percentile {
+        payload.insert("summary_percentile".to_string(), Value::from(value));
+    }
+    if let Some(value) = xy_resolution_mm {
+        payload.insert("xy_resolution_mm".to_string(), Value::from(value));
+    }
+    if let Some(value) = z_resolution_mm {
+        payload.insert("z_resolution_mm".to_string(), Value::from(value));
+    }
+    if let Some(value) = max_voxels {
+        payload.insert("max_voxels".to_string(), Value::from(value));
+    }
+
+    execute_cli_tool(registry, "rt_margin", Value::Object(payload))
 }
 
 fn run_cli_anonymize_metadata(registry: &ToolRegistry, tokens: &[String]) -> anyhow::Result<()> {

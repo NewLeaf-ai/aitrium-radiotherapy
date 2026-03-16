@@ -192,6 +192,7 @@ fn check_tools_list(exe: &Path) -> Result<String> {
         "rt_inspect",
         "rt_dvh",
         "rt_dvh_metrics",
+        "rt_margin",
         "rt_anonymize_metadata",
         "rt_anonymize_template_get",
         "rt_anonymize_template_update",

@@ -286,6 +286,101 @@ pub struct DvhMetricValue {
     pub unit: MetricUnit,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct RtMarginRequest {
+    pub rtstruct_path: String,
+    pub from_structure: String,
+    pub to_structure: String,
+    #[serde(default)]
+    pub direction: MarginDirection,
+    #[serde(default)]
+    pub interpolation: bool,
+    #[serde(default)]
+    pub z_segments: u32,
+    #[serde(default)]
+    pub coverage_thresholds_mm: Option<Vec<f64>>,
+    #[serde(default)]
+    pub summary_percentile: Option<f64>,
+    #[serde(default = "default_direction_cone_degrees")]
+    pub direction_cone_degrees: f64,
+    #[serde(default)]
+    pub xy_resolution_mm: Option<f64>,
+    #[serde(default)]
+    pub z_resolution_mm: Option<f64>,
+    #[serde(default)]
+    pub max_voxels: Option<usize>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RtMarginResponse {
+    pub schema_version: String,
+    pub from_structure: String,
+    pub to_structure: String,
+    pub direction: MarginDirection,
+    pub status: MarginStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub summary_mm: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub summary_percentile: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sample_count: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub min_mm: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub p05_mm: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub p50_mm: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub p95_mm: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mean_mm: Option<f64>,
+    pub coverage: Vec<MarginCoveragePoint>,
+    pub diagnostics: MarginDiagnostics,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MarginDirection {
+    #[default]
+    Uniform,
+    Lateral,
+    Posterior,
+    Anterior,
+    Left,
+    Right,
+    Superior,
+    Inferior,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MarginStatus {
+    Ok,
+    NoSamples,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MarginCoveragePoint {
+    pub threshold_mm: f64,
+    pub percent_within: f64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MarginDiagnostics {
+    pub engine: String,
+    pub interpolation_segments: u32,
+    pub direction_cone_degrees: f64,
+    pub requested_xy_resolution_mm: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub requested_z_resolution_mm: Option<f64>,
+    pub z_resolution_auto: bool,
+    pub max_voxels: usize,
+    pub parse_ms: u64,
+    pub compute_ms: u64,
+}
+
 #[derive(Debug, Clone, Copy, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MetricUnit {
@@ -306,6 +401,10 @@ pub struct ToolSpec {
 
 fn default_include_curves() -> bool {
     false
+}
+
+fn default_direction_cone_degrees() -> f64 {
+    45.0
 }
 
 #[derive(Debug, Clone, Deserialize)]

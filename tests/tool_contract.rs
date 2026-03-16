@@ -18,6 +18,7 @@ fn lists_expected_tools() {
             "rt_inspect".to_string(),
             "rt_dvh".to_string(),
             "rt_dvh_metrics".to_string(),
+            "rt_margin".to_string(),
             "rt_anonymize_metadata".to_string(),
             "rt_anonymize_template_get".to_string(),
             "rt_anonymize_template_update".to_string(),
@@ -80,6 +81,55 @@ fn dvh_metrics_returns_file_not_found_for_missing_files() {
 
     let error = result.expect_err("expected error");
     assert_eq!(error.code.to_string(), ErrorCode::FileNotFound.to_string());
+}
+
+#[test]
+fn margin_validates_required_structure_names() {
+    let registry = ToolRegistry::new();
+    let result = registry.call(
+        "rt_margin",
+        json!({
+          "rtstruct_path": "/missing/rtstruct.dcm",
+          "from_structure": "",
+          "to_structure": "PTV"
+        }),
+    );
+
+    let error = result.expect_err("expected error");
+    assert_eq!(error.code.to_string(), ErrorCode::InvalidInput.to_string());
+}
+
+#[test]
+fn margin_returns_file_not_found_for_missing_files() {
+    let registry = ToolRegistry::new();
+    let result = registry.call(
+        "rt_margin",
+        json!({
+          "rtstruct_path": "/missing/rtstruct.dcm",
+          "from_structure": "CTV",
+          "to_structure": "PTV"
+        }),
+    );
+
+    let error = result.expect_err("expected error");
+    assert_eq!(error.code.to_string(), ErrorCode::FileNotFound.to_string());
+}
+
+#[test]
+fn margin_rejects_invalid_direction() {
+    let registry = ToolRegistry::new();
+    let result = registry.call(
+        "rt_margin",
+        json!({
+          "rtstruct_path": "/missing/rtstruct.dcm",
+          "from_structure": "CTV",
+          "to_structure": "PTV",
+          "direction": "diagonal"
+        }),
+    );
+
+    let error = result.expect_err("expected error");
+    assert_eq!(error.code.to_string(), ErrorCode::InvalidInput.to_string());
 }
 
 #[test]
