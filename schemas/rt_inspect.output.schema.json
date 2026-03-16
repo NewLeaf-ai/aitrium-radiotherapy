@@ -81,6 +81,15 @@
                     },
                     "additionalProperties": false
                   }
+                },
+                "number_of_fractions": { "type": ["integer", "null"] },
+                "plan_date": { "type": ["string", "null"] },
+                "plan_geometry": { "type": ["string", "null"] },
+                "radiation_type": { "type": ["string", "null"] },
+                "beam_count": { "type": ["integer", "null"] },
+                "beam_types": {
+                  "type": ["array", "null"],
+                  "items": { "type": "string" }
                 }
               },
               "additionalProperties": false

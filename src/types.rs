@@ -116,6 +116,18 @@ pub struct PlanInfo {
     pub plan_name: Option<String>,
     pub sop_instance_uid: String,
     pub dose_references: Vec<DoseReference>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub number_of_fractions: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plan_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plan_geometry: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub radiation_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub beam_count: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub beam_types: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
