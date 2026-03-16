@@ -58,7 +58,7 @@ pub fn read_plan(path: &Path) -> Result<PlanInfo, ApiError> {
         .filter(|v| !v.is_empty());
 
     // Beam information from BeamSequence
-    let (radiation_type, beam_count, beam_types) = extract_beam_info(&obj);
+    let (radiation_type, beam_count, beam_types, beam_energies_mv) = extract_beam_info(&obj);
 
     Ok(PlanInfo {
         plan_name,
@@ -70,6 +70,7 @@ pub fn read_plan(path: &Path) -> Result<PlanInfo, ApiError> {
         radiation_type,
         beam_count,
         beam_types,
+        beam_energies_mv,
     })
 }
 
@@ -109,22 +110,23 @@ fn extract_dose_references(
 
 fn extract_beam_info(
     obj: &dicom_object::FileDicomObject<dicom_object::InMemDicomObject>,
-) -> (Option<String>, Option<usize>, Option<Vec<String>>) {
+) -> (Option<String>, Option<usize>, Option<Vec<String>>, Option<Vec<f64>>) {
     let Ok(sequence) = obj.element(Tag(0x300A, 0x00B0)) else {
         // BeamSequence not present
-        return (None, None, None);
+        return (None, None, None, None);
     };
 
     let DicomValue::Sequence(items) = sequence.value() else {
-        return (None, None, None);
+        return (None, None, None, None);
     };
 
     let beams = items.items();
     if beams.is_empty() {
-        return (None, Some(0), None);
+        return (None, Some(0), None, None);
     }
 
     let mut types = std::collections::BTreeSet::new();
+    let mut energies = std::collections::BTreeSet::new();
     let mut radiation = None;
 
     for beam in beams {
@@ -148,6 +150,12 @@ fn extract_beam_info(
                 .map(|v| v.trim().to_string())
                 .filter(|v| !v.is_empty());
         }
+
+        // NominalBeamEnergy (tag 300A,0114): in MV
+        if let Some(energy) = parse_f64(beam, Tag(0x300A, 0x0114)) {
+            // Use ordered bits for BTreeSet<f64>
+            energies.insert(energy.to_bits());
+        }
     }
 
     let beam_types = if types.is_empty() {
@@ -156,7 +164,13 @@ fn extract_beam_info(
         Some(types.into_iter().collect())
     };
 
-    (radiation, Some(beams.len()), beam_types)
+    let beam_energies_mv = if energies.is_empty() {
+        None
+    } else {
+        Some(energies.into_iter().map(f64::from_bits).collect())
+    };
+
+    (radiation, Some(beams.len()), beam_types, beam_energies_mv)
 }
 
 fn parse_f64(obj: &dicom_object::InMemDicomObject, tag: Tag) -> Option<f64> {

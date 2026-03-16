@@ -79,6 +79,8 @@ pub struct StudyInspection {
     pub rtstruct_path: String,
     pub rtdose_path: String,
     pub rtplan_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ct_slice_thickness_mm: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -128,6 +130,8 @@ pub struct PlanInfo {
     pub beam_count: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub beam_types: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub beam_energies_mv: Option<Vec<f64>>,
 }
 
 #[derive(Debug, Clone, Serialize)]

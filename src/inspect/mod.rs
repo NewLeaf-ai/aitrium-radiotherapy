@@ -10,6 +10,8 @@ use crate::inspect::structure_reader::read_structures;
 use crate::types::{
     ApiResult, RtInspectResponse, StudyInspection, StudyModalities, SCHEMA_VERSION,
 };
+use dicom_core::Tag;
+use dicom_object::open_file;
 use std::path::PathBuf;
 
 pub fn inspect_directory(path: &str) -> ApiResult<RtInspectResponse> {
@@ -68,6 +70,8 @@ pub fn inspect_directory(path: &str) -> ApiResult<RtInspectResponse> {
             }
         }
 
+        let ct_slice_thickness_mm = read_ct_slice_thickness(&study);
+
         studies.push(StudyInspection {
             study_instance_uid: study.study_instance_uid,
             modalities: StudyModalities {
@@ -86,6 +90,7 @@ pub fn inspect_directory(path: &str) -> ApiResult<RtInspectResponse> {
                 .map(|path| path.display().to_string())
                 .unwrap_or_default(),
             rtplan_path: selected_rtplan.map(|path| path.display().to_string()),
+            ct_slice_thickness_mm,
         });
     }
 
@@ -272,4 +277,22 @@ fn reference_score(
     }
 
     score
+}
+
+/// Read CT slice thickness from the first CT file in the study.
+fn read_ct_slice_thickness(study: &StudyBucket) -> Option<f64> {
+    let ct_file = study.ct_files.first()?;
+    let obj = open_file(&ct_file.path).ok()?;
+    // SliceThickness tag (0018,0050)
+    let element = obj.element(Tag(0x0018, 0x0050)).ok()?;
+    if let Ok(value) = element.to_float64() {
+        return Some(value);
+    }
+    if let Ok(value) = element.to_float32() {
+        return Some(value as f64);
+    }
+    if let Ok(value) = element.to_str() {
+        return value.trim().parse::<f64>().ok();
+    }
+    None
 }

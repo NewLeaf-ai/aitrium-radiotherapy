@@ -90,6 +90,10 @@
                 "beam_types": {
                   "type": ["array", "null"],
                   "items": { "type": "string" }
+                },
+                "beam_energies_mv": {
+                  "type": ["array", "null"],
+                  "items": { "type": "number" }
                 }
               },
               "additionalProperties": false
@@ -128,7 +132,8 @@
           },
           "rtstruct_path": { "type": "string" },
           "rtdose_path": { "type": "string" },
-          "rtplan_path": { "type": ["string", "null"] }
+          "rtplan_path": { "type": ["string", "null"] },
+          "ct_slice_thickness_mm": { "type": ["number", "null"] }
         },
         "additionalProperties": false
       }
