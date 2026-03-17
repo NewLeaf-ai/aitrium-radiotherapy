@@ -217,9 +217,11 @@ jobs:
           GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
         run: |
           set -euo pipefail
-          DEST_PATH="${AITRIUM_RADIOTHERAPY_TAG}"
+          PRODUCT_PATH="aitrium-radiotherapy"
+          DEST_PATH="${PRODUCT_PATH}/${AITRIUM_RADIOTHERAPY_TAG}"
           PUBLIC_BASE_URL="https://storage.googleapis.com/${GCS_BUCKET_NAME}/${DEST_PATH}"
 
+          echo "AITRIUM_PUBLIC_PRODUCT_PATH=${PRODUCT_PATH}" >> "$GITHUB_ENV"
           echo "AITRIUM_PUBLIC_DIST_PATH=${DEST_PATH}" >> "$GITHUB_ENV"
           echo "AITRIUM_PUBLIC_BASE_URL=${PUBLIC_BASE_URL}" >> "$GITHUB_ENV"
 
@@ -247,5 +249,12 @@ jobs:
 
           DEST="gs://${GCS_BUCKET_NAME}/${AITRIUM_PUBLIC_DIST_PATH}"
           gsutil cp "$PUBLIC_DIR/"* "${DEST}/"
+
+          if [[ "$AITRIUM_RADIOTHERAPY_CHANNEL" == "stable" ]]; then
+            LATEST_DEST="gs://${GCS_BUCKET_NAME}/${AITRIUM_PUBLIC_PRODUCT_PATH}/latest"
+            gsutil cp "$PUBLIC_DIR/"* "${LATEST_DEST}/"
+            echo "Published stable latest alias to ${LATEST_DEST}"
+          fi
+
           echo "Published public distribution to ${DEST}"
           echo "Public install root: ${AITRIUM_PUBLIC_BASE_URL}"
