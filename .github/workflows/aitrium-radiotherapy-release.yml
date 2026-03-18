@@ -23,7 +23,7 @@ jobs:
             runner: macos-15-intel
           - target_name: linux-x86_64
             rust_target: x86_64-unknown-linux-gnu
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
           - target_name: windows-x86_64
             rust_target: x86_64-pc-windows-msvc
             runner: windows-latest
