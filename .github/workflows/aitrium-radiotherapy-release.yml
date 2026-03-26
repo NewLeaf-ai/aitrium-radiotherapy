@@ -249,10 +249,12 @@ jobs:
 
           DEST="gs://${GCS_BUCKET_NAME}/${AITRIUM_PUBLIC_DIST_PATH}"
           gsutil cp "$PUBLIC_DIR/"* "${DEST}/"
+          gsutil -m setmeta -h "Cache-Control:public,max-age=31536000,immutable" "${DEST}/*"
 
           if [[ "$AITRIUM_RADIOTHERAPY_CHANNEL" == "stable" ]]; then
             LATEST_DEST="gs://${GCS_BUCKET_NAME}/${AITRIUM_PUBLIC_PRODUCT_PATH}/latest"
             gsutil cp "$PUBLIC_DIR/"* "${LATEST_DEST}/"
+            gsutil -m setmeta -h "Cache-Control:no-store,max-age=0" "${LATEST_DEST}/*"
             echo "Published stable latest alias to ${LATEST_DEST}"
           fi
 

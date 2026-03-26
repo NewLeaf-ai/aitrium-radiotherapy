@@ -151,8 +151,9 @@ fn extract_beam_info(
                 .filter(|v| !v.is_empty());
         }
 
-        // NominalBeamEnergy (tag 300A,0114): in MV
-        if let Some(energy) = parse_f64(beam, Tag(0x300A, 0x0114)) {
+        // NominalBeamEnergy (tag 300A,0114): in MV. Some plans store this on
+        // the first control point rather than directly on the beam item.
+        if let Some(energy) = parse_nominal_beam_energy(beam) {
             // Use ordered bits for BTreeSet<f64>
             energies.insert(energy.to_bits());
         }
@@ -188,4 +189,88 @@ fn parse_f64(obj: &dicom_object::InMemDicomObject, tag: Tag) -> Option<f64> {
         }
     }
     None
+}
+
+fn parse_nominal_beam_energy(beam: &dicom_object::InMemDicomObject) -> Option<f64> {
+    if let Some(value) = parse_f64(beam, Tag(0x300A, 0x0114)) {
+        return Some(value);
+    }
+    let sequence = beam.element(Tag(0x300A, 0x0111)).ok()?;
+    let DicomValue::Sequence(items) = sequence.value() else {
+        return None;
+    };
+    let first = items.items().first()?;
+    parse_f64(first, Tag(0x300A, 0x0114))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::read_plan;
+    use dicom_core::value::DataSetSequence;
+    use dicom_core::{DataElement, Tag, VR};
+    use dicom_dictionary_std::tags;
+    use dicom_dictionary_std::uids;
+    use dicom_object::meta::FileMetaTableBuilder;
+    use dicom_object::InMemDicomObject;
+
+    #[test]
+    fn read_plan_extracts_beam_energy_from_first_control_point() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let plan_path = temp.path().join("rtplan.dcm");
+
+        let fraction_group = InMemDicomObject::from_element_iter([DataElement::new(
+            Tag(0x300A, 0x0078),
+            VR::IS,
+            "39",
+        )]);
+        let control_point = InMemDicomObject::from_element_iter([DataElement::new(
+            Tag(0x300A, 0x0114),
+            VR::DS,
+            "8.0",
+        )]);
+        let beam = InMemDicomObject::from_element_iter([
+            DataElement::new(Tag(0x300A, 0x00C4), VR::CS, "DYNAMIC"),
+            DataElement::new(Tag(0x300A, 0x00C6), VR::CS, "PHOTON"),
+            DataElement::new(
+                Tag(0x300A, 0x0111),
+                VR::SQ,
+                DataSetSequence::from(vec![control_point]),
+            ),
+        ]);
+
+        let dataset = InMemDicomObject::from_element_iter([
+            DataElement::new(tags::MODALITY, VR::CS, "RTPLAN"),
+            DataElement::new(tags::SOP_CLASS_UID, VR::UI, uids::RT_PLAN_STORAGE),
+            DataElement::new(tags::SOP_INSTANCE_UID, VR::UI, "1.2.826.0.1.3680043.2.1125.11"),
+            DataElement::new(tags::STUDY_INSTANCE_UID, VR::UI, "1.2.826.0.1.3680043.2.1125.12"),
+            DataElement::new(tags::SERIES_INSTANCE_UID, VR::UI, "1.2.826.0.1.3680043.2.1125.13"),
+            DataElement::new(Tag(0x300A, 0x0003), VR::LO, "Pelvis"),
+            DataElement::new(
+                Tag(0x300A, 0x0070),
+                VR::SQ,
+                DataSetSequence::from(vec![fraction_group]),
+            ),
+            DataElement::new(
+                Tag(0x300A, 0x00B0),
+                VR::SQ,
+                DataSetSequence::from(vec![beam]),
+            ),
+        ]);
+
+        let file = dataset
+            .with_meta(
+                FileMetaTableBuilder::new()
+                    .transfer_syntax(uids::EXPLICIT_VR_LITTLE_ENDIAN)
+                    .media_storage_sop_class_uid(uids::RT_PLAN_STORAGE)
+                    .media_storage_sop_instance_uid("1.2.826.0.1.3680043.2.1125.11"),
+            )
+            .expect("meta");
+        file.write_to_file(&plan_path).expect("write rtplan");
+
+        let plan = read_plan(&plan_path).expect("read plan");
+
+        assert_eq!(plan.number_of_fractions, Some(39));
+        assert_eq!(plan.beam_energies_mv, Some(vec![8.0]));
+        assert_eq!(plan.radiation_type.as_deref(), Some("PHOTON"));
+    }
 }
