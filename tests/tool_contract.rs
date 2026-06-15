@@ -18,6 +18,7 @@ fn lists_expected_tools() {
             "rt_inspect".to_string(),
             "rt_dvh".to_string(),
             "rt_dvh_metrics".to_string(),
+            "rt_margin".to_string(),
             "rt_anonymize_metadata".to_string(),
             "rt_anonymize_template_get".to_string(),
             "rt_anonymize_template_update".to_string(),
