@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aitrium-radiotherapy/rt_margin.output.schema.json",
+  "title": "rt_margin output",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "from_structure",
+    "to_structure",
+    "direction",
+    "status",
+    "coverage",
+    "diagnostics"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "from_structure": {
+      "type": "string"
+    },
+    "to_structure": {
+      "type": "string"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "uniform",
+        "lateral",
+        "posterior",
+        "anterior",
+        "left",
+        "right",
+        "superior",
+        "inferior"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "no_samples"],
+      "description": "ok=finite metrics available, no_samples=no usable finite boundary clearance samples were available."
+    },
+    "summary_mm": {
+      "type": "number",
+      "description": "Primary policy-facing clearance metric. Positive means the source is inside the target with margin; negative means protrusion outside the target."
+    },
+    "summary_percentile": {
+      "type": "number",
+      "description": "Percentile used to compute summary_mm."
+    },
+    "sample_count": {
+      "type": "integer",
+      "description": "Number of boundary samples used by the margin engine."
+    },
+    "min_mm": {
+      "type": "number"
+    },
+    "p05_mm": {
+      "type": "number"
+    },
+    "p50_mm": {
+      "type": "number"
+    },
+    "p95_mm": {
+      "type": "number"
+    },
+    "mean_mm": {
+      "type": "number"
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["threshold_mm", "percent_within"],
+        "properties": {
+          "threshold_mm": {
+            "type": "number"
+          },
+          "percent_within": {
+            "type": "number",
+            "description": "Coverage percentage for this threshold. In rt_margin v2, this means percent of boundary samples with clearance >= threshold_mm."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "diagnostics": {
+      "type": "object",
+      "required": [
+        "engine",
+        "interpolation_segments",
+        "direction_cone_degrees",
+        "requested_xy_resolution_mm",
+        "z_resolution_auto",
+        "max_voxels",
+        "parse_ms",
+        "compute_ms"
+      ],
+      "properties": {
+        "engine": {
+          "type": "string"
+        },
+        "interpolation_segments": {
+          "type": "integer"
+        },
+        "direction_cone_degrees": {
+          "type": "number"
+        },
+        "requested_xy_resolution_mm": {
+          "type": "number"
+        },
+        "requested_z_resolution_mm": {
+          "type": "number"
+        },
+        "z_resolution_auto": {
+          "type": "boolean"
+        },
+        "max_voxels": {
+          "type": "integer"
+        },
+        "parse_ms": {
+          "type": "integer"
+        },
+        "compute_ms": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

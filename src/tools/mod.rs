@@ -2,6 +2,7 @@ pub mod anonymize;
 pub mod anonymize_template;
 pub mod dvh;
 pub mod inspect;
+pub mod margin;
 
 use crate::types::{ApiError, ApiResult, ErrorCode, ToolSpec};
 use serde_json::Value;
@@ -35,6 +36,12 @@ impl ToolRegistry {
                 output_schema: schema_from_file("../../schemas/rt_dvh_metrics.output.schema.json"),
             },
             ToolSpec {
+                name: "rt_margin".to_string(),
+                description: "Compute directional/uniform geometric margin (clearance) from one RTSTRUCT between two ROIs. Clearance is conservative: positive = source inside target with margin, negative = protrusion.".to_string(),
+                input_schema: schema_from_file("../../schemas/rt_margin.input.schema.json"),
+                output_schema: schema_from_file("../../schemas/rt_margin.output.schema.json"),
+            },
+            ToolSpec {
                 name: "rt_anonymize_metadata".to_string(),
                 description: "Apply policy-driven DICOM metadata anonymization (metadata only; no pixel transformation) with dry-run/write modes".to_string(),
                 input_schema: schema_from_file("../../schemas/rt_anonymize_metadata.input.schema.json"),
@@ -66,6 +73,7 @@ impl ToolRegistry {
             "rt_inspect" => inspect::handle(arguments),
             "rt_dvh" => dvh::handle(arguments),
             "rt_dvh_metrics" => dvh::handle_metrics(arguments),
+            "rt_margin" => margin::handle(arguments),
             "rt_anonymize_metadata" => anonymize::handle(arguments),
             "rt_anonymize_template_get" => anonymize_template::handle_get(arguments),
             "rt_anonymize_template_update" => anonymize_template::handle_update(arguments),
@@ -98,6 +106,12 @@ fn schema_from_file(path: &str) -> Value {
         }
         "../../schemas/rt_dvh_metrics.output.schema.json" => {
             include_str!("../../schemas/rt_dvh_metrics.output.schema.json")
+        }
+        "../../schemas/rt_margin.input.schema.json" => {
+            include_str!("../../schemas/rt_margin.input.schema.json")
+        }
+        "../../schemas/rt_margin.output.schema.json" => {
+            include_str!("../../schemas/rt_margin.output.schema.json")
         }
         "../../schemas/rt_anonymize_metadata.input.schema.json" => {
             include_str!("../../schemas/rt_anonymize_metadata.input.schema.json")
