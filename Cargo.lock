@@ -47,7 +47,7 @@ dependencies = [
 [[package]]
 name = "aitrium_dvh"
 version = "0.2.0"
-source = "git+https://github.com/NewLeaf-ai/aitrium-dvh.git?tag=v0.2.0#30aab74abe71c66f749dd1f22b740a349ce6136c"
+source = "git+https://github.com/NewLeaf-ai/aitrium-dvh.git?tag=v0.2.1#9966c58fe837ad8a0002aea9568342e524085d63"
 dependencies = [
  "anyhow",
  "crossbeam",
